@@ -61,43 +61,43 @@ namespace LabsForCsu
         // Метод для преобразования в ОПЗ
         static List<string> ConvertToPostfix(string expression)
         {
-            List<string> postfix = new List<string>();
-            Stack<char> operation = new Stack<char>();
+            List<string> FinalExpr = new List<string>(); // Лист для хранения финального выражения ОПЗ
+            Stack<char> operation = new Stack<char>(); // Стек для хранения операций
 
-            for (int i = 0; i < expression.Length; i++)
+            for (int i = 0; i < expression.Length; i++) //Перебираем все символы в исходном выражении
             {
-                if (char.IsDigit(expression[i]) || expression[i] == '.')
+                if (char.IsDigit(expression[i]) || expression[i] == '.') // Если символ равен числу или точке
                 {
-                    string number = "";
-                    while (i < expression.Length && (char.IsDigit(expression[i]) || expression[i] == '.'))
-                        number += expression[i++];
-                    postfix.Add(number);
-                    i--;
+                    string number = ""; //временная переменная
+                    while (i < expression.Length && (char.IsDigit(expression[i]) || expression[i] == '.')) // добавляем символы до тех пор, пока не встретим нецифровой символ
+                        number += expression[i++]; // добавляем символ к числу и переходим на след. символ
+                    FinalExpr.Add(number);
+                    i--; // после завершения цикла while, индекс i будет на одну позицию впереди последнего символа числа
                 }
                 
                 if (expression[i] == '(')
-                    operation.Push(expression[i]);
-                
-                else if (expression[i] == ')')
-                {
-                    while (operation.Count > 0 && operation.Peek() != '(')
-                        postfix.Add(operation.Pop().ToString());
-                    if (operation.Count > 0 && operation.Peek() == '(')
-                        operation.Pop();
-                }
+                    operation.Push(expression[i]); //помещаем скобку в стек
                 
                 else if ("+-*/".Contains(expression[i]))
                 {
-                    while (operation.Count != 0 && HasPrecedence(expression[i], operation.Peek()))
-                        postfix.Add(operation.Pop().ToString());
+                    while (operation.Count != 0 && HasPrecedence(expression[i], operation.Peek())) // Если оператор на вершине стека имеет больший или равный приоритет, он извлекается из стека и добавляется в финальное выражение
+                        FinalExpr.Add(operation.Pop().ToString());
                     operation.Push(expression[i]);
+                }
+                
+                else if (expression[i] == ')') 
+                {
+                    while (operation.Count > 0 && operation.Peek() != '(')
+                        FinalExpr.Add(operation.Pop().ToString()); // операторы извлекаются из стека и добавляются в список, пока не будет найдена открывающая скобка
+                    if (operation.Count > 0 && operation.Peek() == '(') // которая удаляется из стека
+                        operation.Pop();
                 }
             }
 
             while (operation.Count != 0)
-                postfix.Add(operation.Pop().ToString());
+                FinalExpr.Add(operation.Pop().ToString());
 
-            return postfix;
+            return FinalExpr;
         }
 
         // Метод для вычисления значения выражения в ОПЗ
@@ -113,7 +113,7 @@ namespace LabsForCsu
                 else 
                     values.Push(ApplyOperation(char.Parse(token), values.Pop(), values.Pop()));
             }
-
+            
             return values.Pop();
         }
 
