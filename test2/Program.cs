@@ -18,7 +18,7 @@ namespace LabsForCsu
             Console.WriteLine("Операции:"); // Вывод списка операций
             Console.WriteLine(string.Join(" ", Tokenize(input).Item2));
             
-            Console.WriteLine($"\nРезультат вычисления: "); // Вывод значения выражения
+            Console.WriteLine("\nРезультат вычисления: "); // Вывод значения выражения
             Console.WriteLine(EvaluatePostfix(ConvertToPostfix(input)));
         }
 
