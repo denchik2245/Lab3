@@ -80,7 +80,7 @@ namespace LabsForCsu
                 
                 else if ("+-*/".Contains(expression[i]))
                 {
-                    while (operation.Count != 0 && HasPrecedence(expression[i], operation.Peek())) // Если оператор на вершине стека имеет больший или равный приоритет, он извлекается из стека и добавляется в финальное выражение
+                    while (operation.Count != 0 && Priority(operation.Peek()) >= Priority(expression[i])) // Если оператор на вершине стека имеет больший или равный приоритет, он извлекается из стека и добавляется в финальное выражение
                         FinalExpr.Add(operation.Pop().ToString());
                     operation.Push(expression[i]);
                 }
@@ -118,14 +118,11 @@ namespace LabsForCsu
         }
 
         // Метод для приоритетов
-        static bool HasPrecedence(char op1, char op2)
+        static int Priority(char op)
         {
-            if (op2 == '(' || op2 == ')')
-                return false;
-            if ((op1 == '*' || op1 == '/') && (op2 == '+' || op2 == '-'))
-                return false;
-            else
-                return true;
+            if (op == '*' || op == '/') return 2;
+            if (op == '+' || op == '-') return 1;
+            return 0;
         }
 
         // Метод для вычисления значения 2 переменных

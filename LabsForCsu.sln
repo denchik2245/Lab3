@@ -4,7 +4,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FirstVariant", "FirstVarian
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "test", "test\test.csproj", "{F6D08140-9C95-48B0-8BB6-261F1B25CEAB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WithRPE", "WithRPE\WithRPE.csproj", "{04E62CA4-F2BD-4FBC-8117-97C48BF6C37B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WithRPN", "WithRPN\WithRPN.csproj", "{04E62CA4-F2BD-4FBC-8117-97C48BF6C37B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
