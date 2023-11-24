@@ -1,8 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FirstVariant", "FirstVariant\FirstVariant.csproj", "{CD0EF203-B32D-4579-8060-ED5826186186}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WithoutRPN", "WithoutRPN\WithoutRPN.csproj", "{CD0EF203-B32D-4579-8060-ED5826186186}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "test", "test\test.csproj", "{F6D08140-9C95-48B0-8BB6-261F1B25CEAB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WithClass", "WithClass\WithClass.csproj", "{F6D08140-9C95-48B0-8BB6-261F1B25CEAB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WithRPN", "WithRPN\WithRPN.csproj", "{04E62CA4-F2BD-4FBC-8117-97C48BF6C37B}"
 EndProject
