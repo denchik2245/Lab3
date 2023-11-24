@@ -72,9 +72,7 @@ namespace LabsForCsu
                 {
                     if (values.Count < 2)
                         throw new InvalidOperationException("Недостаточно данных в стеке для выполнения операции");
-                    double right = values.Pop();
-                    double left = values.Pop();
-                    values.Push(ApplyOperation(op, left, right));
+                    values.Push(ApplyOperation(op, values.Pop(), values.Pop()));
                 }
                 else
                 {
