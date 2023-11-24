@@ -8,8 +8,7 @@ namespace LabsForCsu
     // Класс для представления чисел
     public class Number : Token
     {
-        public double Value { get; private set; }
-
+        public double Value { get; }
         public Number(double value)
         {
             Value = value;
@@ -19,14 +18,13 @@ namespace LabsForCsu
     // Класс для представления операций
     public class Operation : Token
     {
-        public char Symbol { get; private set; }
+        public char Symbol { get; }
         public int Priority => Symbol switch
         {
             '*' or '/' => 2,
             '+' or '-' => 1,
             _ => 0
         };
-
         public Operation(char symbol)
         {
             Symbol = symbol;
@@ -36,7 +34,7 @@ namespace LabsForCsu
     // Класс для представления скобок
     public class Parenthesis : Token
     {
-        public char Symbol { get; private set; }
+        public char Symbol { get; }
 
         public Parenthesis(char symbol)
         {
@@ -50,7 +48,6 @@ namespace LabsForCsu
         {
             Console.WriteLine("Введите математическое выражение:");
             var input = Console.ReadLine();
-
             var tokens = Tokenize(input);
 
             Console.WriteLine("\nОбратная польская запись: ");
@@ -88,7 +85,6 @@ namespace LabsForCsu
                         tokens.Add(new Number(double.Parse(currentNum, CultureInfo.InvariantCulture)));
                         currentNum = "";
                     }
-
                     if ("+-*/".Contains(ch))
                     {
                         tokens.Add(new Operation(ch));
