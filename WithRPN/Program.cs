@@ -107,7 +107,7 @@ namespace LabsForCsu
 
             foreach (var token in postfix)
             {
-                if (double.TryParse(token, NumberStyles.Any, CultureInfo.InvariantCulture, out double val))
+                if (double.TryParse(token, CultureInfo.InvariantCulture, out double val))
                     values.Push(val);
                 
                 else 

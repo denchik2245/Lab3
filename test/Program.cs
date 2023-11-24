@@ -2,131 +2,184 @@
 
 namespace LabsForCsu
 {
+    // Базовый класс для всех токенов
+    public abstract class Token { }
+
+    // Класс для представления чисел
+    public class Number : Token
+    {
+        public double Value { get; private set; }
+
+        public Number(double value)
+        {
+            Value = value;
+        }
+    }
+
+    // Класс для представления операций
+    public class Operation : Token
+    {
+        public char Symbol { get; private set; }
+        public int Priority => Symbol switch
+        {
+            '*' or '/' => 2,
+            '+' or '-' => 1,
+            _ => 0
+        };
+
+        public Operation(char symbol)
+        {
+            Symbol = symbol;
+        }
+    }
+
+    // Класс для представления скобок
+    public class Parenthesis : Token
+    {
+        public char Symbol { get; private set; }
+
+        public Parenthesis(char symbol)
+        {
+            Symbol = symbol;
+        }
+    }
+
     class Program
     {
         static void Main(string[] args)
         {
             Console.WriteLine("Введите математическое выражение:");
             var input = Console.ReadLine();
-            
-            Console.WriteLine("\nОбратная польская запись: "); // Вывод ОПЗ
-            Console.WriteLine(string.Join(" ", ConvertToPostfix(input)));
-            
-            Console.WriteLine("Числа:"); // Вывод списка чисел
-            Console.WriteLine(string.Join(" ", Tokenize(input).Item1));
-            
-            Console.WriteLine("Операции:"); // Вывод списка операций
-            Console.WriteLine(string.Join(" ", Tokenize(input).Item2));
-            
-            Console.WriteLine("\nРезультат вычисления: "); // Вывод значения выражения
-            Console.WriteLine(EvaluatePostfix(ConvertToPostfix(input)));
+
+            var tokens = Tokenize(input);
+
+            Console.WriteLine("\nОбратная польская запись: ");
+            var postfix = ConvertToPostfix(tokens);
+            foreach (var token in postfix)
+            {
+                if (token is Number number)
+                    Console.Write($"{number.Value} ");
+                else if (token is Operation operation)
+                    Console.Write($"{operation.Symbol} ");
+            }
+
+            Console.WriteLine("\n\nРезультат вычисления: ");
+            Console.WriteLine(EvaluatePostfix(postfix));
         }
 
-        // Метод для вывода чисел и операций
-        static (List<double>, List<char>) Tokenize(string input)
+        // Метод для токенизации входной строки
+        static List<Token> Tokenize(string input)
         {
-            var numbers = new List<double>(); // Список для хранения чисел.
-            var operations = new List<char>(); // Список для хранения операций с их приоритетами.
-            var currentNum = ""; // Текущее считываемое число.
+            var tokens = new List<Token>();
+            var currentNum = "";
 
-            // Перебор каждого символа в строке.
             for (int i = 0; i < input.Length; i++)
             {
-                char ch = input[i]; // Записываем символ
-                
-                if (char.IsDigit(ch) || ch == '.') // Если символ является числом или точкой.
-                    currentNum += ch; // Добавляем в текущее число
-                
+                char ch = input[i];
+
+                if (char.IsDigit(ch) || ch == '.')
+                {
+                    currentNum += ch;
+                }
                 else
                 {
-                    // Если наше число не пустое
                     if (!string.IsNullOrWhiteSpace(currentNum))
                     {
-                        // Добавление числа в список и очистка текущего числа.
-                        numbers.Add(double.Parse(currentNum, CultureInfo.InvariantCulture));
+                        tokens.Add(new Number(double.Parse(currentNum, CultureInfo.InvariantCulture)));
                         currentNum = "";
                     }
-                    
-                    else if ("+-*/".Contains(ch))
-                        operations.Add(ch);
+
+                    if ("+-*/".Contains(ch))
+                    {
+                        tokens.Add(new Operation(ch));
+                    }
+                    else if (ch == '(' || ch == ')')
+                    {
+                        tokens.Add(new Parenthesis(ch));
+                    }
                 }
             }
-            
-            if (!string.IsNullOrWhiteSpace(currentNum)) // Если после завершения строки осталось число
-                numbers.Add(double.Parse(currentNum, CultureInfo.InvariantCulture));
 
-            return (numbers, operations);
-        }
-        
-        // Метод для преобразования в ОПЗ
-        static List<string> ConvertToPostfix(string expression)
-        {
-            List<string> FinalExpr = new List<string>(); // Лист для хранения финального выражения ОПЗ
-            Stack<char> operation = new Stack<char>(); // Стек для хранения операций
-
-            for (int i = 0; i < expression.Length; i++) //Перебираем все символы в исходном выражении
+            if (!string.IsNullOrWhiteSpace(currentNum))
             {
-                if (char.IsDigit(expression[i]) || expression[i] == '.') // Если символ равен числу или точке
+                tokens.Add(new Number(double.Parse(currentNum, CultureInfo.InvariantCulture)));
+            }
+
+            return tokens;
+        }
+
+        // Метод для преобразования списка токенов в ОПЗ
+        static List<Token> ConvertToPostfix(List<Token> tokens)
+        {
+            var postfix = new List<Token>();
+            var operationStack = new Stack<Operation>();
+
+            foreach (var token in tokens)
+            {
+                if (token is Number number)
                 {
-                    string number = ""; //временная переменная
-                    while (i < expression.Length && (char.IsDigit(expression[i]) || expression[i] == '.')) // добавляем символы до тех пор, пока не встретим нецифровой символ
-                        number += expression[i++]; // добавляем символ к числу и переходим на след. символ
-                    FinalExpr.Add(number);
-                    i--; // после завершения цикла while, индекс i будет на одну позицию впереди последнего символа числа
+                    postfix.Add(number);
                 }
-                
-                if (expression[i] == '(')
-                    operation.Push(expression[i]); //помещаем скобку в стек
-                
-                else if ("+-*/".Contains(expression[i]))
+                else if (token is Operation operation)
                 {
-                    while (operation.Count != 0 && Priority(operation.Peek()) >= Priority(expression[i])) // Если оператор на вершине стека имеет больший или равный приоритет, он извлекается из стека и добавляется в финальное выражение
-                        FinalExpr.Add(operation.Pop().ToString());
-                    operation.Push(expression[i]);
+                    while (operationStack.Count != 0 && operationStack.Peek().Priority >= operation.Priority)
+                    {
+                        postfix.Add(operationStack.Pop());
+                    }
+                    operationStack.Push(operation);
                 }
-                
-                else if (expression[i] == ')') 
+                else if (token is Parenthesis parenthesis)
                 {
-                    while (operation.Count > 0 && operation.Peek() != '(')
-                        FinalExpr.Add(operation.Pop().ToString()); // операторы извлекаются из стека и добавляются в список, пока не будет найдена открывающая скобка
-                    if (operation.Count > 0 && operation.Peek() == '(') // которая удаляется из стека
-                        operation.Pop();
+                    if (parenthesis.Symbol == '(')
+                    {
+                        operationStack.Push(new Operation(parenthesis.Symbol)); // Это временное решение для скобок, их нужно будет обработать отдельно.
+                    }
+                    else
+                    {
+                        while (operationStack.Count > 0 && operationStack.Peek().Symbol != '(')
+                        {
+                            postfix.Add(operationStack.Pop());
+                        }
+                        if (operationStack.Count > 0 && operationStack.Peek().Symbol == '(')
+                        {
+                            operationStack.Pop();
+                        }
+                    }
                 }
             }
 
-            while (operation.Count != 0)
-                FinalExpr.Add(operation.Pop().ToString());
+            while (operationStack.Count != 0)
+            {
+                postfix.Add(operationStack.Pop());
+            }
 
-            return FinalExpr;
+            return postfix;
         }
 
         // Метод для вычисления значения выражения в ОПЗ
-        static double EvaluatePostfix(List<string> postfix)
+        static double EvaluatePostfix(List<Token> postfix)
         {
-            Stack<double> values = new Stack<double>();
+            var values = new Stack<double>();
 
             foreach (var token in postfix)
             {
-                if (double.TryParse(token, NumberStyles.Any, CultureInfo.InvariantCulture, out double val))
-                    values.Push(val);
-                
-                else 
-                    values.Push(ApplyOperation(char.Parse(token), values.Pop(), values.Pop()));
+                if (token is Number number)
+                {
+                    values.Push(number.Value);
+                }
+                else if (token is Operation operation)
+                {
+                    double a = values.Pop();
+                    double b = values.Pop();
+                    values.Push(ApplyOperation(operation.Symbol, b, a));
+                }
             }
-            
+
             return values.Pop();
         }
 
-        // Метод для приоритетов
-        static int Priority(char op)
-        {
-            if (op == '*' || op == '/') return 2;
-            if (op == '+' || op == '-') return 1;
-            return 0;
-        }
-
-        // Метод для вычисления значения 2 переменных
-        static double ApplyOperation(char op, double b, double a)
+        // Метод для вычисления значения двух переменных
+        static double ApplyOperation(char op, double a, double b)
         {
             switch (op)
             {
@@ -137,8 +190,9 @@ namespace LabsForCsu
                     if (b == 0)
                         throw new DivideByZeroException("Попытка деления на ноль.");
                     return a / b;
+                default:
+                    throw new ArgumentException($"Неподдерживаемая операция: {op}");
             }
-            return 0;
         }
     }
 }
