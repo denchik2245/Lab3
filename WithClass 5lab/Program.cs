@@ -2,43 +2,39 @@
 
 namespace LabsForCsu
 {
-    // Базовый класс для всех токенов
-    public abstract class Token { }
-
-    // Класс для представления чисел
-    public class Number : Token
+    public abstract class Token { } // Базовый класс для всех токенов
+    
+    public class Number : Token //Класс Number, который наследуется от класса Token.
     {
-        public double Value { get; }
-        public Number(double value)
+        public double Value { get; } //Это определение свойства Value в классе. Value - это свойство только для чтения. Оно устанавливается в конструкторе и больше не может быть изменено
+        public Number(double value) //Конструктор класса Number
         {
-            Value = value;
+            Value = value; //Происходит инициализация свойства Value переданным аргументом value
         }
     }
-
-    // Класс для представления операций
-    public class Operation : Token
+    
+    public class Operation : Token //Класс Operation, который наследуется от класса Token.
     {
         public char Symbol { get; }
-        public int Priority => Symbol switch
+        public int Priority => Symbol switch //Это выражение свойства для Priority. Значение Priority зависит от значения Symbol
         {
             '*' or '/' => 2,
             '+' or '-' => 1,
-            _ => 0
+            _ => 0 // _ это шаблон, который соответствует всему остальному
         };
-        public Operation(char symbol)
+        public Operation(char symbol) //Конструктор класса Operation
         {
-            Symbol = symbol;
+            Symbol = symbol; //значение параметра symbol присваивается свойству Symbol
         }
     }
 
-    // Класс для представления скобок
-    public class Parenthesis : Token
+    public class Parenthesis : Token //Класс Parenthesis, который наследуется от класса Token.
     {
         public char Symbol { get; }
 
-        public Parenthesis(char symbol)
+        public Parenthesis(char symbol) //Конструктор класса Parenthesis
         {
-            Symbol = symbol;
+            Symbol = symbol; //значение параметра symbol присваивается свойству Symbol
         }
     }
 
