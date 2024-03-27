@@ -1,67 +1,43 @@
 ﻿using System.Globalization;
 
-namespace LabsForCsu
+namespace RPN_Logic
 {
     public abstract class Token { } // Базовый класс для всех токенов
-    
-    public class Number : Token //Класс Number, который наследуется от класса Token.
+    public class Number : Token // Класс Number, наследуемый от Token
     {
-        public double Value { get; } //Это определение свойства Value в классе. Value - это свойство только для чтения. Оно устанавливается в конструкторе и больше не может быть изменено
-        public Number(double value) //Конструктор класса Number
+        public double Value { get; }
+        public Number(double value)
         {
-            Value = value; //Происходит инициализация свойства Value переданным аргументом value
+            Value = value;
         }
     }
-    
-    public class Operation : Token //Класс Operation, который наследуется от класса Token.
+    public class Operation : Token // Класс Operation, наследуемый от Token
     {
         public char Symbol { get; }
-        public int Priority => Symbol switch //Это выражение свойства для Priority. Значение Priority зависит от значения Symbol
+        public int Priority => Symbol switch
         {
             '*' or '/' => 2,
             '+' or '-' => 1,
-            _ => 0 // _ это шаблон, который соответствует всему остальному
+            _ => 0
         };
-        public Operation(char symbol) //Конструктор класса Operation
+        public Operation(char symbol)
         {
-            Symbol = symbol; //значение параметра symbol присваивается свойству Symbol
+            Symbol = symbol;
         }
     }
 
-    public class Parenthesis : Token //Класс Parenthesis, который наследуется от класса Token.
+    public class Parenthesis : Token // Класс Parenthesis, наследуемый от Token
     {
         public char Symbol { get; }
-
-        public Parenthesis(char symbol) //Конструктор класса Parenthesis
+        public Parenthesis(char symbol)
         {
-            Symbol = symbol; //значение параметра symbol присваивается свойству Symbol
+            Symbol = symbol;
         }
     }
 
-    class Program
+    public static class Calculator
     {
-        static void Main(string[] args)
-        {
-            Console.WriteLine("Введите математическое выражение:");
-            var input = Console.ReadLine();
-            var tokens = Tokenize(input);
-
-            Console.WriteLine("\nОбратная польская запись: ");
-            var postfix = ConvertToPostfix(tokens);
-            foreach (var token in postfix)
-            {
-                if (token is Number number)
-                    Console.Write($"{number.Value} ");
-                else if (token is Operation operation)
-                    Console.Write($"{operation.Symbol} ");
-            }
-
-            Console.WriteLine("\n\nРезультат вычисления: ");
-            Console.WriteLine(EvaluatePostfix(postfix));
-        }
-
-        // Метод для токенизации входной строки
-        static List<Token> Tokenize(string input)
+        public static List<Token> Tokenize(string input)
         {
             var tokens = new List<Token>();
             var currentNum = "";
@@ -100,8 +76,7 @@ namespace LabsForCsu
             return tokens;
         }
 
-        // Метод для преобразования списка токенов в ОПЗ
-        static List<Token> ConvertToPostfix(List<Token> tokens)
+        public static List<Token> ConvertToPostfix(List<Token> tokens)
         {
             var postfix = new List<Token>();
             var operationStack = new Stack<Operation>();
@@ -124,7 +99,7 @@ namespace LabsForCsu
                 {
                     if (parenthesis.Symbol == '(')
                     {
-                        operationStack.Push(new Operation(parenthesis.Symbol)); // Это временное решение для скобок, их нужно будет обработать отдельно.
+                        operationStack.Push(new Operation(parenthesis.Symbol));
                     }
                     else
                     {
@@ -148,8 +123,7 @@ namespace LabsForCsu
             return postfix;
         }
 
-        // Метод для вычисления значения выражения в ОПЗ
-        static double EvaluatePostfix(List<Token> postfix)
+        public static double EvaluatePostfix(List<Token> postfix)
         {
             var values = new Stack<double>();
 
@@ -170,8 +144,7 @@ namespace LabsForCsu
             return values.Pop();
         }
 
-        // Метод для вычисления значения двух переменных
-        static double ApplyOperation(char op, double a, double b)
+        private static double ApplyOperation(char op, double a, double b)
         {
             switch (op)
             {
