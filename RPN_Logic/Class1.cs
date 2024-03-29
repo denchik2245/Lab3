@@ -2,8 +2,8 @@
 
 namespace RPN_Logic
 {
-    public abstract class Token { } // Базовый класс для всех токенов
-    public class Number : Token // Класс Number, наследуемый от Token
+    public abstract class Token { }
+    public class Number : Token
     {
         public double Value { get; }
         public Number(double value)
@@ -11,7 +11,17 @@ namespace RPN_Logic
             Value = value;
         }
     }
-    public class Operation : Token // Класс Operation, наследуемый от Token
+
+    public class Variable : Token
+    {
+        public string Name { get; }
+        public Variable(string name)
+        {
+            Name = name;
+        }
+    }
+
+    public class Operation : Token
     {
         public char Symbol { get; }
         public int Priority => Symbol switch
@@ -26,7 +36,7 @@ namespace RPN_Logic
         }
     }
 
-    public class Parenthesis : Token // Класс Parenthesis, наследуемый от Token
+    public class Parenthesis : Token
     {
         public char Symbol { get; }
         public Parenthesis(char symbol)
@@ -65,6 +75,14 @@ namespace RPN_Logic
                     {
                         tokens.Add(new Parenthesis(ch));
                     }
+                    else if (char.IsLetter(ch))
+                    {
+                        tokens.Add(new Variable(ch.ToString()));
+                    }
+                    else if (!char.IsWhiteSpace(ch))
+                    {
+                        throw new ArgumentException($"Неподдерживаемый символ: {ch}");
+                    }
                 }
             }
 
@@ -76,88 +94,104 @@ namespace RPN_Logic
             return tokens;
         }
 
+
         public static List<Token> ConvertToPostfix(List<Token> tokens)
         {
             var postfix = new List<Token>();
-            var operationStack = new Stack<Operation>();
+            var operationStack = new Stack<Token>();
 
             foreach (var token in tokens)
             {
-                if (token is Number number)
+                switch (token)
                 {
-                    postfix.Add(number);
-                }
-                else if (token is Operation operation)
-                {
-                    while (operationStack.Count != 0 && operationStack.Peek().Priority >= operation.Priority)
-                    {
-                        postfix.Add(operationStack.Pop());
-                    }
-                    operationStack.Push(operation);
-                }
-                else if (token is Parenthesis parenthesis)
-                {
-                    if (parenthesis.Symbol == '(')
-                    {
-                        operationStack.Push(new Operation(parenthesis.Symbol));
-                    }
-                    else
-                    {
-                        while (operationStack.Count > 0 && operationStack.Peek().Symbol != '(')
+                    case Number number:
+                        postfix.Add(number);
+                        break;
+                    case Operation operation:
+                        while (operationStack.Count != 0 &&
+                               operationStack.Peek() is Operation topOperation &&
+                               topOperation.Priority >= operation.Priority)
                         {
                             postfix.Add(operationStack.Pop());
                         }
-                        if (operationStack.Count > 0 && operationStack.Peek().Symbol == '(')
+                        operationStack.Push(operation);
+                        break;
+                    case Parenthesis parenthesis when parenthesis.Symbol == '(':
+                        operationStack.Push(parenthesis);
+                        break;
+                    case Parenthesis parenthesis when parenthesis.Symbol == ')':
+                        while (operationStack.Count > 0 && !(operationStack.Peek() is Parenthesis p && p.Symbol == '('))
+                        {
+                            postfix.Add(operationStack.Pop());
+                        }
+                        if (operationStack.Count > 0 && operationStack.Peek() is Parenthesis)
                         {
                             operationStack.Pop();
                         }
-                    }
+                        break;
+                    case Variable variable:
+                        postfix.Add(variable);
+                        break;
                 }
             }
 
             while (operationStack.Count != 0)
             {
-                postfix.Add(operationStack.Pop());
+                var remainingToken = operationStack.Pop();
+                if (!(remainingToken is Parenthesis))
+                {
+                    postfix.Add(remainingToken);
+                }
             }
 
             return postfix;
         }
 
-        public static double EvaluatePostfix(List<Token> postfix)
+        public static double EvaluatePostfix(List<Token> postfix, Dictionary<string, double> variableValues)
         {
             var values = new Stack<double>();
 
             foreach (var token in postfix)
             {
-                if (token is Number number)
+                switch (token)
                 {
-                    values.Push(number.Value);
-                }
-                else if (token is Operation operation)
-                {
-                    double a = values.Pop();
-                    double b = values.Pop();
-                    values.Push(ApplyOperation(operation.Symbol, b, a));
+                    case Number number:
+                        values.Push(number.Value);
+                        break;
+                    case Operation operation:
+                        if (values.Count < 2)
+                            throw new InvalidOperationException("Недостаточно операндов в стеке для выполнения операции.");
+
+                        double b = values.Pop();
+                        double a = values.Pop();
+
+                        values.Push(ApplyOperation(operation.Symbol, a, b));
+                        break;
+                    case Variable variable:
+                        if (!variableValues.TryGetValue(variable.Name, out var value))
+                            throw new ArgumentException($"Неизвестная переменная: {variable.Name}");
+                        values.Push(value);
+                        break;
                 }
             }
+
+            if (values.Count != 1)
+                throw new InvalidOperationException("Ошибка в выражении: в стеке осталось более одного значения.");
 
             return values.Pop();
         }
 
+
         private static double ApplyOperation(char op, double a, double b)
         {
-            switch (op)
+            return op switch
             {
-                case '+': return a + b;
-                case '-': return a - b;
-                case '*': return a * b;
-                case '/':
-                    if (b == 0)
-                        throw new DivideByZeroException("Попытка деления на ноль.");
-                    return a / b;
-                default:
-                    throw new ArgumentException($"Неподдерживаемая операция: {op}");
-            }
+                '+' => a + b,
+                '-' => a - b,
+                '*' => a * b,
+                '/' => b == 0 ? throw new DivideByZeroException("Попытка деления на ноль.") : a / b,
+                _ => throw new ArgumentException($"Неподдерживаемая операция: {op}")
+            };
         }
     }
 }

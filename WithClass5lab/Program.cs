@@ -22,12 +22,27 @@ namespace test
                 {
                     Console.Write($"{operation.Symbol} ");
                 }
-                // Для других типов токенов можно добавить дополнительные условия, если необходимо.
+                else if (token is Variable variable)
+                {
+                    Console.Write($"{variable.Name} ");
+                }
             }
-
-            Console.WriteLine("\n\nРезультат вычисления: ");
-            Console.WriteLine(Calculator.EvaluatePostfix(postfix));
+            
+            Console.WriteLine("\n\nВведите значение переменной x:");
+            double xValue = double.Parse(Console.ReadLine());
+            
+            var variableValues = new Dictionary<string, double> { { "x", xValue } };
+            
+            try
+            {
+                double result = Calculator.EvaluatePostfix(postfix, variableValues);
+                Console.WriteLine("\nРезультат вычисления: ");
+                Console.WriteLine(result);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\nОшибка: " + ex.Message);
+            }
         }
-
     }
 }
