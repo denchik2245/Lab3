@@ -4,9 +4,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WithClass5lab", "WithClass5
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WithRPN 4lab", "WithRPN 4lab\WithRPN 4lab.csproj", "{04E62CA4-F2BD-4FBC-8117-97C48BF6C37B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WithWPF", "WithWPF\WithWPF.csproj", "{D187C10D-A8AF-494D-99CA-26971F45AF98}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lab7", "WithWPF\lab7.csproj", "{D187C10D-A8AF-494D-99CA-26971F45AF98}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RPN_Logic", "RPN_Logic\RPN_Logic.csproj", "{D832C009-6C9A-4007-B680-A61AF03A8620}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lab8", "lab8\lab8.csproj", "{D25D7AAA-1087-4566-873F-76C31E8DC0AB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -30,5 +32,9 @@ Global
 		{D832C009-6C9A-4007-B680-A61AF03A8620}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D832C009-6C9A-4007-B680-A61AF03A8620}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D832C009-6C9A-4007-B680-A61AF03A8620}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D25D7AAA-1087-4566-873F-76C31E8DC0AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D25D7AAA-1087-4566-873F-76C31E8DC0AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D25D7AAA-1087-4566-873F-76C31E8DC0AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D25D7AAA-1087-4566-873F-76C31E8DC0AB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

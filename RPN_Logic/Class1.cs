@@ -12,6 +12,16 @@ namespace RPN_Logic
         }
     }
 
+    public class UnaryOperation : Token
+    {
+        public char Symbol { get; }
+        public UnaryOperation(char symbol)
+        {
+            Symbol = symbol;
+        }
+    }
+
+    
     public class Variable : Token
     {
         public string Name { get; }
@@ -51,6 +61,7 @@ namespace RPN_Logic
         {
             var tokens = new List<Token>();
             var currentNum = "";
+            bool mayBeUnary = true; // Предполагаем, что первая операция может быть унарной
 
             for (int i = 0; i < input.Length; i++)
             {
@@ -59,6 +70,7 @@ namespace RPN_Logic
                 if (char.IsDigit(ch) || ch == '.')
                 {
                     currentNum += ch;
+                    mayBeUnary = false; // Число найдено, операция уже не может быть унарной
                 }
                 else
                 {
@@ -69,15 +81,26 @@ namespace RPN_Logic
                     }
                     if ("+-*/".Contains(ch))
                     {
-                        tokens.Add(new Operation(ch));
+                        if (mayBeUnary && ch == '-')
+                        {
+                            // Обнаружен унарный минус
+                            tokens.Add(new UnaryOperation(ch));
+                        }
+                        else
+                        {
+                            tokens.Add(new Operation(ch));
+                        }
+                        mayBeUnary = true; // После операции следующая может быть унарной
                     }
                     else if (ch == '(' || ch == ')')
                     {
                         tokens.Add(new Parenthesis(ch));
+                        mayBeUnary = ch == '('; // Унарный оператор может следовать только после '('
                     }
                     else if (char.IsLetter(ch))
                     {
                         tokens.Add(new Variable(ch.ToString()));
+                        mayBeUnary = false;
                     }
                     else if (!char.IsWhiteSpace(ch))
                     {
@@ -94,7 +117,6 @@ namespace RPN_Logic
             return tokens;
         }
 
-
         public static List<Token> ConvertToPostfix(List<Token> tokens)
         {
             var postfix = new List<Token>();
@@ -106,6 +128,9 @@ namespace RPN_Logic
                 {
                     case Number number:
                         postfix.Add(number);
+                        break;
+                    case UnaryOperation unaryOperation:
+                        operationStack.Push(unaryOperation);
                         break;
                     case Operation operation:
                         while (operationStack.Count != 0 &&
@@ -158,6 +183,15 @@ namespace RPN_Logic
                     case Number number:
                         values.Push(number.Value);
                         break;
+
+                    case UnaryOperation unaryOperation:
+                        if (values.Count < 1)
+                            throw new InvalidOperationException("Недостаточно операндов в стеке для выполнения унарной операции.");
+
+                        double unaryValue = values.Pop();
+                        values.Push(ApplyUnaryOperation(unaryOperation.Symbol, unaryValue));
+                        break;
+
                     case Operation operation:
                         if (values.Count < 2)
                             throw new InvalidOperationException("Недостаточно операндов в стеке для выполнения операции.");
@@ -167,10 +201,11 @@ namespace RPN_Logic
 
                         values.Push(ApplyOperation(operation.Symbol, a, b));
                         break;
+
                     case Variable variable:
-                        if (!variableValues.TryGetValue(variable.Name, out var value))
+                        if (!variableValues.TryGetValue(variable.Name, out double variableValue))
                             throw new ArgumentException($"Неизвестная переменная: {variable.Name}");
-                        values.Push(value);
+                        values.Push(variableValue);
                         break;
                 }
             }
@@ -181,6 +216,16 @@ namespace RPN_Logic
             return values.Pop();
         }
 
+
+        private static double ApplyUnaryOperation(char op, double a)
+        {
+            return op switch
+            {
+                '-' => -a,
+                // При необходимости добавьте другие унарные операции
+                _ => throw new ArgumentException($"Неподдерживаемая унарная операция: {op}")
+            };
+        }
 
         private static double ApplyOperation(char op, double a, double b)
         {
