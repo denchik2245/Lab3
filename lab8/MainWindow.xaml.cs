@@ -1,11 +1,9 @@
-﻿using System;
-using System.Globalization;
+﻿using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using RPN_Logic;
-using System.Collections.Generic;
 
 namespace WithWPF
 {
@@ -20,21 +18,18 @@ namespace WithWPF
         public MainWindow()
         {
             InitializeComponent();
-            // Установка плейсхолдеров
             InputTextBox.Text = InputTextBoxPlaceholder;
             StartRangeTextBox.Text = StartRangePlaceholder;
             EndRangeTextBox.Text = EndRangePlaceholder;
             StepTextBox.Text = StepPlaceholder;
             ScaleTextBox.Text = ScalePlaceholder;
         }
-
-        // Методы GotFocus
+        
         private void StartRangeTextBox_GotFocus(object sender, RoutedEventArgs e) => ClearPlaceholder(StartRangeTextBox, StartRangePlaceholder);
         private void EndRangeTextBox_GotFocus(object sender, RoutedEventArgs e) => ClearPlaceholder(EndRangeTextBox, EndRangePlaceholder);
         private void StepTextBox_GotFocus(object sender, RoutedEventArgs e) => ClearPlaceholder(StepTextBox, StepPlaceholder);
         private void ScaleTextBox_GotFocus(object sender, RoutedEventArgs e) => ClearPlaceholder(ScaleTextBox, ScalePlaceholder);
-
-        // Методы LostFocus
+        
         private void StartRangeTextBox_LostFocus(object sender, RoutedEventArgs e) => SetPlaceholder(StartRangeTextBox, StartRangePlaceholder);
         private void EndRangeTextBox_LostFocus(object sender, RoutedEventArgs e) => SetPlaceholder(EndRangeTextBox, EndRangePlaceholder);
         private void StepTextBox_LostFocus(object sender, RoutedEventArgs e) => SetPlaceholder(StepTextBox, StepPlaceholder);
@@ -58,7 +53,6 @@ namespace WithWPF
 
         private void BuildGraphButtonClick(object sender, RoutedEventArgs e)
         {
-            // Проверка на правильность введенных данных
             if (!double.TryParse(StartRangeTextBox.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out double startRange) ||
                 !double.TryParse(EndRangeTextBox.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out double endRange) ||
                 !double.TryParse(StepTextBox.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out double step) ||
@@ -89,17 +83,13 @@ namespace WithWPF
         }
         private void DrawGraph(string input, double startRange, double endRange, double step, double scale)
         {
-            // Очищаем Canvas
             GraphCanvas.Children.Clear();
-
-            // Масштабирование и центрирование графика
+            
             double centerCanvasX = GraphCanvas.ActualWidth / 2;
             double centerCanvasY = GraphCanvas.ActualHeight / 2;
-
-            // Рисуем оси координат
+            
             DrawGrid(centerCanvasX, centerCanvasY, step, scale);
             
-            // Подготовка к построению графика
             Polyline graphLine = new Polyline
             {
                 Stroke = Brushes.Red,
@@ -108,27 +98,22 @@ namespace WithWPF
 
             for (double x = startRange; x <= endRange; x += step)
             {
-                // Заменяем переменную 'x' на текущее значение 'x'
                 string expression = input.Replace("x", x.ToString(CultureInfo.InvariantCulture));
-
-                // Вычисляем значение функции
+                
                 var tokens = Calculator.Tokenize(expression);
                 var postfix = Calculator.ConvertToPostfix(tokens);
                 double result = Calculator.EvaluatePostfix(postfix, new Dictionary<string, double> { { "x", x } });
-
-                // Преобразуем точки графика в координаты Canvas и добавляем их в Polyline
+                
                 Point graphPoint = new Point(centerCanvasX + (x * scale), centerCanvasY - (result * scale));
                 graphLine.Points.Add(graphPoint);
             }
-
-            // Добавляем линию графика на Canvas
+            
             GraphCanvas.Children.Add(graphLine);
         }
 
 
         private void DrawGrid(double centerX, double centerY, double step, double scale)
         {
-            // Рисование осей X и Y
             Line axisX = new Line
             {
                 X1 = 0,
@@ -149,8 +134,7 @@ namespace WithWPF
 
             GraphCanvas.Children.Add(axisX);
             GraphCanvas.Children.Add(axisY);
-
-            // Добавление делений на оси
+            
             for (double i = step * scale; i < GraphCanvas.ActualWidth / 2; i += step * scale)
             {
                 GraphCanvas.Children.Add(CreateTick(centerX + i, centerY));

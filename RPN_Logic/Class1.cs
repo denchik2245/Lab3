@@ -15,12 +15,26 @@ namespace RPN_Logic
     public class UnaryOperation : Token
     {
         public char Symbol { get; }
-        public UnaryOperation(char symbol)
+        public int Priority { get; } 
+
+        public UnaryOperation(char symbol, int priority)
         {
             Symbol = symbol;
+            Priority = priority;
         }
     }
 
+    public class Function : Token
+    {
+        public string Name { get; }
+        public int ArgumentsCount { get; }
+
+        public Function(string name, int argumentsCount)
+        {
+            Name = name;
+            ArgumentsCount = argumentsCount;
+        }
+    }
     
     public class Variable : Token
     {
@@ -36,6 +50,7 @@ namespace RPN_Logic
         public char Symbol { get; }
         public int Priority => Symbol switch
         {
+            '^' => 3,
             '*' or '/' => 2,
             '+' or '-' => 1,
             _ => 0
@@ -61,7 +76,7 @@ namespace RPN_Logic
         {
             var tokens = new List<Token>();
             var currentNum = "";
-            bool mayBeUnary = true; // Предполагаем, что первая операция может быть унарной
+            var currentVar = "";
 
             for (int i = 0; i < input.Length; i++)
             {
@@ -70,51 +85,80 @@ namespace RPN_Logic
                 if (char.IsDigit(ch) || ch == '.')
                 {
                     currentNum += ch;
-                    mayBeUnary = false; // Число найдено, операция уже не может быть унарной
                 }
                 else
                 {
-                    if (!string.IsNullOrWhiteSpace(currentNum))
+                    if (currentNum != "")
                     {
                         tokens.Add(new Number(double.Parse(currentNum, CultureInfo.InvariantCulture)));
                         currentNum = "";
                     }
-                    if ("+-*/".Contains(ch))
+
+                    if (char.IsLetter(ch))
                     {
-                        if (mayBeUnary && ch == '-')
+                        currentVar += ch;
+                    }
+                    else
+                    {
+                        if (currentVar != "")
                         {
-                            // Обнаружен унарный минус
-                            tokens.Add(new UnaryOperation(ch));
+                            try
+                            {
+                                int argsCount = FunctionArgumentsCount(currentVar);
+                                tokens.Add(new Function(currentVar, argsCount));
+                            }
+                            catch (ArgumentException)
+                            {
+                                tokens.Add(new Variable(currentVar));
+                            }
+                            currentVar = "";
                         }
-                        else
+
+                        if (!char.IsWhiteSpace(ch) && ch != '(' && ch != ')')
                         {
                             tokens.Add(new Operation(ch));
                         }
-                        mayBeUnary = true; // После операции следующая может быть унарной
-                    }
-                    else if (ch == '(' || ch == ')')
-                    {
-                        tokens.Add(new Parenthesis(ch));
-                        mayBeUnary = ch == '('; // Унарный оператор может следовать только после '('
-                    }
-                    else if (char.IsLetter(ch))
-                    {
-                        tokens.Add(new Variable(ch.ToString()));
-                        mayBeUnary = false;
-                    }
-                    else if (!char.IsWhiteSpace(ch))
-                    {
-                        throw new ArgumentException($"Неподдерживаемый символ: {ch}");
+                        else if (ch == '(' || ch == ')')
+                        {
+                            tokens.Add(new Parenthesis(ch));
+                        }
                     }
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(currentNum))
+            if (!string.IsNullOrEmpty(currentNum))
             {
                 tokens.Add(new Number(double.Parse(currentNum, CultureInfo.InvariantCulture)));
             }
+            if (!string.IsNullOrEmpty(currentVar))
+            {
+                try
+                {
+                    int argsCount = FunctionArgumentsCount(currentVar);
+                    tokens.Add(new Function(currentVar, argsCount));
+                }
+                catch (ArgumentException)
+                {
+                    tokens.Add(new Variable(currentVar));
+                }
+            }
 
             return tokens;
+        }
+        
+        private static int FunctionArgumentsCount(string functionName)
+        {
+            return functionName switch
+            {
+                "log" => 2,
+                "rt" => 2,
+                "sqrt" => 1,
+                "sin" => 1,
+                "cos" => 1,
+                "tg" => 1,
+                "ctg" => 1,
+                _ => throw new ArgumentException($"Unsupported function: {functionName}")
+            };
         }
 
         public static List<Token> ConvertToPostfix(List<Token> tokens)
@@ -130,6 +174,12 @@ namespace RPN_Logic
                         postfix.Add(number);
                         break;
                     case UnaryOperation unaryOperation:
+                        while (operationStack.Count != 0 &&
+                               operationStack.Peek() is Operation topOperation &&
+                               topOperation.Priority >= unaryOperation.Priority)
+                        {
+                            postfix.Add(operationStack.Pop());
+                        }
                         operationStack.Push(unaryOperation);
                         break;
                     case Operation operation:
@@ -175,6 +225,7 @@ namespace RPN_Logic
         public static double EvaluatePostfix(List<Token> postfix, Dictionary<string, double> variableValues)
         {
             var values = new Stack<double>();
+            double[] args = null;
 
             foreach (var token in postfix)
             {
@@ -185,44 +236,81 @@ namespace RPN_Logic
                         break;
 
                     case UnaryOperation unaryOperation:
-                        if (values.Count < 1)
-                            throw new InvalidOperationException("Недостаточно операндов в стеке для выполнения унарной операции.");
-
                         double unaryValue = values.Pop();
                         values.Push(ApplyUnaryOperation(unaryOperation.Symbol, unaryValue));
                         break;
 
                     case Operation operation:
-                        if (values.Count < 2)
-                            throw new InvalidOperationException("Недостаточно операндов в стеке для выполнения операции.");
-
                         double b = values.Pop();
                         double a = values.Pop();
-
                         values.Push(ApplyOperation(operation.Symbol, a, b));
                         break;
 
+                    case Function function:
+                        args = new double[function.ArgumentsCount];
+                        for (int i = function.ArgumentsCount - 1; i >= 0; i--)
+                        {
+                            args[i] = values.Pop();
+                        }
+                        values.Push(ApplyFunction(function, args));
+                        break;
+
                     case Variable variable:
-                        if (!variableValues.TryGetValue(variable.Name, out double variableValue))
-                            throw new ArgumentException($"Неизвестная переменная: {variable.Name}");
-                        values.Push(variableValue);
+                        if (!variableValues.TryGetValue(variable.Name, out double varValue))
+                            throw new ArgumentException($"Unknown variable: {variable.Name}");
+                        values.Push(varValue);
                         break;
                 }
             }
 
             if (values.Count != 1)
-                throw new InvalidOperationException("Ошибка в выражении: в стеке осталось более одного значения.");
+                throw new InvalidOperationException("Error in expression: More than one value left in the stack.");
 
             return values.Pop();
         }
-
+        
+        private static double ApplyFunction(Function function, double[] args)
+        {
+            switch (function.Name)
+            {
+                case "log":
+                    if (args.Length != 2)
+                        throw new ArgumentException("Function 'log' expects two arguments.");
+                    return Math.Log(args[0], args[1]);
+                case "rt":
+                    if (args.Length != 2)
+                        throw new ArgumentException("Function 'rt' expects two arguments.");
+                    return Math.Pow(args[1], 1 / args[0]);
+                case "sqrt":
+                    if (args.Length != 1)
+                        throw new ArgumentException("Function 'sqrt' expects one argument.");
+                    if (args[0] < 0)
+                        throw new ArgumentException("Cannot calculate square root of a negative number.");
+                    return Math.Sqrt(args[0]);
+                case "sin":
+                case "cos":
+                case "tg":
+                case "ctg":
+                    if (args.Length != 1)
+                        throw new ArgumentException($"Function '{function.Name}' expects one argument.");
+                    return function.Name switch
+                    {
+                        "sin" => Math.Sin(args[0]),
+                        "cos" => Math.Cos(args[0]),
+                        "tg" => Math.Tan(args[0]),
+                        "ctg" => 1 / Math.Tan(args[0]),
+                        _ => throw new ArgumentException($"Unsupported function: {function.Name}")
+                    };
+                default:
+                    throw new ArgumentException($"Unsupported function: {function.Name}");
+            }
+        }
 
         private static double ApplyUnaryOperation(char op, double a)
         {
             return op switch
             {
                 '-' => -a,
-                // При необходимости добавьте другие унарные операции
                 _ => throw new ArgumentException($"Неподдерживаемая унарная операция: {op}")
             };
         }
@@ -234,8 +322,9 @@ namespace RPN_Logic
                 '+' => a + b,
                 '-' => a - b,
                 '*' => a * b,
-                '/' => b == 0 ? throw new DivideByZeroException("Попытка деления на ноль.") : a / b,
-                _ => throw new ArgumentException($"Неподдерживаемая операция: {op}")
+                '/' => b == 0 ? throw new DivideByZeroException("Attempt to divide by zero.") : a / b,
+                '^' => Math.Pow(a, b),
+                _ => throw new ArgumentException($"Unsupported operation: {op}")
             };
         }
     }
