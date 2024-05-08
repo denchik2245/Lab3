@@ -1,16 +1,28 @@
 ﻿<Window x:Class="WithWPF.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Калькулятор" Height="200" Width="300">
-    <StackPanel VerticalAlignment="Stretch" HorizontalAlignment="Left" Margin="10">
-        <TextBox x:Name="InputTextBox" Height="25" Width="200" Margin="0,0,0,1"
-                 GotFocus="InputTextBox_GotFocus" LostFocus="InputTextBox_LostFocus"/>
-        <TextBox x:Name="VariableValueTextBox" Height="25" Margin="0,0,0,1"
-                 GotFocus="VariableValueTextBox_GotFocus" LostFocus="VariableValueTextBox_LostFocus"/>
-        <Button Content="Вычислить" Click="CalculateButtonClick" Height="25" Margin="0,0,0,1" />
-        <Label x:Name="ResultLabel" Height="25" Margin="0,0,0,1" />
-    </StackPanel>
+        Title="Калькулятор" Height="250" Width="300">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Text="Введите выражение" Grid.Row="0" Margin="0,0,0,5" />
+        <TextBox x:Name="InputTextBox" Grid.Row="1" Height="25" Margin="0,0,0,10" />
+
+        <TextBlock Text="Значение переменной x" Grid.Row="2" Margin="0,0,0,5" />
+        <TextBox x:Name="VariableValueTextBox" Grid.Row="3" Height="25" Margin="0,0,0,10" />
+
+        <Button Content="Вычислить" Grid.Row="4" Height="25" Click="CalculateButtonClick" Margin="0,0,0,10" />
+
+        <Label x:Name="ResultLabel" Grid.Row="5" Height="25" VerticalAlignment="Top" />
+    </Grid>
 </Window>
-
-
-

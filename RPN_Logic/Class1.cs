@@ -11,19 +11,24 @@ namespace RPN_Logic
         {
             Value = value;
         }
+
+        public override string ToString() => Value.ToString();
     }
 
     public class UnaryOperation : Token
     {
         public char Symbol { get; }
-        public int Priority { get; } 
+        public int Priority { get; }
 
         public UnaryOperation(char symbol, int priority)
         {
             Symbol = symbol;
             Priority = priority;
         }
+
+        public override string ToString() => Symbol.ToString();
     }
+
 
     public class Function : Token
     {
@@ -35,16 +40,23 @@ namespace RPN_Logic
             Name = name;
             ArgumentsCount = argumentsCount;
         }
+
+        public override string ToString() => Name;
     }
+
     
     public class Variable : Token
     {
         public string Name { get; }
+
         public Variable(string name)
         {
             Name = name;
         }
+
+        public override string ToString() => Name;
     }
+
 
     public class Operation : Token
     {
@@ -56,28 +68,46 @@ namespace RPN_Logic
             '+' or '-' => 1,
             _ => 0
         };
+        public Associativity Associativity => Symbol switch
+        {
+            '^' => Associativity.Right,
+            '*' or '/' or '+' or '-' => Associativity.Left,
+            _ => Associativity.Left
+        };
+
         public Operation(char symbol)
         {
             Symbol = symbol;
         }
+
+        public override string ToString() => Symbol.ToString();
     }
 
+    public enum Associativity
+    {
+        Left,
+        Right
+    }
+    
     public class Parenthesis : Token
     {
         public char Symbol { get; }
+
         public Parenthesis(char symbol)
         {
             Symbol = symbol;
         }
+
+        public override string ToString() => Symbol.ToString();
     }
+
 
     public static class Calculator
     {
+        //Разбиваем на список токенов
         public static List<Token> Tokenize(string input)
         {
-            //Создаем список для хранения токенов
             var tokens = new List<Token>();
-            //Переменные для текущего числа и текущей переменно
             var currentNum = new StringBuilder();
             var currentVar = new StringBuilder();
 
@@ -85,34 +115,29 @@ namespace RPN_Logic
             for (int i = 0; i < input.Length; i++)
             {
                 char ch = input[i];
-
-                //Если символ - цифра или точка, добавляем его к текущему числу
+                
                 if (char.IsDigit(ch) || ch == '.')
                 {
                     currentNum.Append(ch);
                 }
                 else
                 {
-                    //Если текущее число не пустое, добавляем его как токен Number
                     if (currentNum.Length > 0)
                     {
                         tokens.Add(new Number(double.Parse(currentNum.ToString(), CultureInfo.InvariantCulture)));
                         currentNum.Clear();
                     }
-                    //Если символ - буква, добавляем его к текущей переменной
                     if (char.IsLetter(ch))
                     {
                         currentVar.Append(ch);
                     }
                     else
                     {
-                        //Если текущая переменная не пуста, обрабатываем ее как функцию или переменную
                         if (currentVar.Length > 0)
                         {
                             ProcessVariable(currentVar.ToString(), tokens);
                             currentVar.Clear();
                         }
-                        //Добавляем операцию или скобку в список токенов
                         if (!char.IsWhiteSpace(ch) && ch != '(' && ch != ')')
                         {
                             tokens.Add(new Operation(ch));
@@ -124,12 +149,10 @@ namespace RPN_Logic
                     }
                 }
             }
-            //Добавляем последнее число, если оно есть
             if (currentNum.Length > 0)
             {
                 tokens.Add(new Number(double.Parse(currentNum.ToString(), CultureInfo.InvariantCulture)));
             }
-            //Обрабатываем последнюю переменную, если она есть
             if (currentVar.Length > 0)
             {
                 ProcessVariable(currentVar.ToString(), tokens);
@@ -143,14 +166,11 @@ namespace RPN_Logic
         {
             try
             {
-                //Пытаемся определить количество аргументов функции
                 int argsCount = FunctionArgumentsCount(var);
-                //Добавляем функцию с количеством аргументовДобавляем функцию с количеством аргументов
                 tokens.Add(new Function(var, argsCount));
             }
             catch (ArgumentException)
             {
-                //Если не удалось определить количество аргументов, добавляем переменную
                 tokens.Add(new Variable(var));
             }
         }
@@ -173,140 +193,148 @@ namespace RPN_Logic
         //Метод для преобразования инфиксного выражения в постфиксное
         public static List<Token> ConvertToPostfix(List<Token> tokens)
         {
-            var postfix = new List<Token>(); //Создаем список для хранения токенов в постфиксной форме
-            var operationStack = new Stack<Token>(); //Создаем стек для операций
+            var postfix = new List<Token>();
+            var operationStack = new Stack<Token>();
 
-            //Проходим по каждому токену из входного списка
             foreach (var token in tokens)
             {
-                switch (token) //Проверяем тип токена
+                switch (token)
                 {
-                    case Number number: //Если токен - число
-                        postfix.Add(number); //Добавляем число в постфиксную запись
+                    case Number number:
+                        postfix.Add(number);
                         break;
-                    
-                    case UnaryOperation unaryOperation: //Если токен - унарная операция
+
+                    case Variable variable:
+                        postfix.Add(variable);
+                        break;
+
+                    case Function function:
+                        operationStack.Push(function);
+                        break;
+
+                    case UnaryOperation unaryOperation:
                         while (operationStack.Count != 0 &&
                                operationStack.Peek() is Operation topOperation &&
                                topOperation.Priority >= unaryOperation.Priority)
                         {
-                            postfix.Add(operationStack.Pop()); //Пока стек не пуст и верхний элемент стека имеет больший или равный приоритет, добавляем операции из стека в постфиксную запись
+                            postfix.Add(operationStack.Pop());
                         }
-                        operationStack.Push(unaryOperation); //Добавляем унарную операцию в стек
+                        operationStack.Push(unaryOperation);
                         break;
-                    
-                    case Operation operation: //Если токен - операция
+
+                    case Operation operation:
                         while (operationStack.Count != 0 &&
                                operationStack.Peek() is Operation topOperation &&
-                               topOperation.Priority >= operation.Priority)
+                               ((operation.Associativity == Associativity.Left && topOperation.Priority >= operation.Priority) ||
+                                (operation.Associativity == Associativity.Right && topOperation.Priority > operation.Priority)))
                         {
-                            postfix.Add(operationStack.Pop()); //Пока стек не пуст и верхний элемент стека имеет больший или равный приоритет, добавляем операции из стека в постфиксную запись
+                            postfix.Add(operationStack.Pop());
                         }
-                        operationStack.Push(operation); //Добавляем операцию в стек
+                        operationStack.Push(operation);
                         break;
-                    
-                    case Parenthesis parenthesis when parenthesis.Symbol == '(': //Если токен - открывающая скобка
-                        operationStack.Push(parenthesis); //Добавляем скобку в стек
+
+                    case Parenthesis parenthesis when parenthesis.Symbol == '(':
+                        operationStack.Push(parenthesis);
                         break;
-                    
-                    case Parenthesis parenthesis when parenthesis.Symbol == ')': //Если токен - закрывающая скобка
+
+                    case Parenthesis parenthesis when parenthesis.Symbol == ')':
                         while (operationStack.Count > 0 && !(operationStack.Peek() is Parenthesis p && p.Symbol == '('))
                         {
-                            postfix.Add(operationStack.Pop()); //Пока стек не пуст и верхний элемент стека не является открывающей скобкой, добавляем операции из стека в постфиксную запись
+                            postfix.Add(operationStack.Pop());
                         }
                         if (operationStack.Count > 0 && operationStack.Peek() is Parenthesis)
                         {
-                            operationStack.Pop(); //Удаляем открывающую скобку из стека
+                            operationStack.Pop();
                         }
-                        break;
-                    
-                    case Function function when function.Name == "sqrt": // Если функция - квадратный корень
-                        operationStack.Push(function); // Добавляем функцию в стек
-                        break;
-                    
-                    case Function function when function.Name == "sin":
-                        operationStack.Push(function);
-                        break;
-                    
-                    case Function function when function.Name == "cos":
-                        operationStack.Push(function);
-                        break;
-                    
-                    case Function function when function.Name == "tg":
-                        operationStack.Push(function);
-                        break;
-                    
-                    case Function function when function.Name == "ctg":
-                        operationStack.Push(function);
-                        break;
-                    
-                    case Function function when function.Name == "log":
-                        operationStack.Push(function);
-                        break;
-                    
-                    case Variable variable: //Если токен - переменная
-                        postfix.Add(variable); //Добавляем переменную в постфиксную запись
+                        
+                        if (operationStack.Count > 0 && operationStack.Peek() is Function)
+                        {
+                            postfix.Add(operationStack.Pop());
+                        }
                         break;
                 }
             }
 
-            while (operationStack.Count != 0) //Пока стек не пуст
+            // Переместить оставшиеся операции из стека в постфиксную запись
+            while (operationStack.Count != 0)
             {
                 var remainingToken = operationStack.Pop();
                 if (!(remainingToken is Parenthesis))
                 {
-                    postfix.Add(remainingToken); //Добавляем оставшиеся операции из стека в постфиксную запись
+                    postfix.Add(remainingToken);
                 }
             }
 
             return postfix;
         }
 
+        //Считаем выражение
         public static double EvaluatePostfix(List<Token> postfix, Dictionary<string, double> variableValues)
         {
-            var values = new Stack<double>(); //Создаем стек для хранения промежуточных значений
-            double[] args = null; //Массив для аргументов функции
+            var stack = new Stack<double>();
 
-            foreach (var token in postfix) //Проходим по каждому токену в постфиксной записи
+            foreach (var token in postfix)
             {
-                switch (token) //Проверяем тип токена
+                switch (token)
                 {
-                    case Number number: //Если токен - число
-                        values.Push(number.Value); //Добавляем число в стек
+                    case Number number:
+                        stack.Push(number.Value);
                         break;
 
-                    case UnaryOperation unaryOperation: //Если токен - унарная операция
-                        double unaryValue = values.Pop(); //Извлекаем значение из стека
-                        values.Push(ApplyUnaryOperation(unaryOperation.Symbol, unaryValue)); //Применяем унарную операцию и добавляем результат в стек
+                    case Variable variable:
+                        if (variableValues.TryGetValue(variable.Name, out var value))
+                        {
+                            stack.Push(value);
+                        }
+                        else
+                        {
+                            throw new ArgumentException($"Переменная '{variable.Name}' не определена.");
+                        }
                         break;
 
-                    case Operation operation: //Если токен - операция
-                        double b = values.Pop(); //Извлекаем второй операнд
-                        double a = values.Pop(); //Извлекаем первый операнд
-                        values.Push(ApplyOperation(operation.Symbol, a, b)); //Применяем операцию и добавляем результат в стек
+                    case Operation operation:
+                        if (stack.Count < 2)
+                        {
+                            throw new InvalidOperationException("Недостаточно операндов в стеке для бинарной операции.");
+                        }
+                        var b = stack.Pop();
+                        var a = stack.Pop();
+                        stack.Push(ApplyOperation(operation.Symbol, a, b));
                         break;
 
-                    case Function function: //Если токен - функция
-                        args = new double[function.ArgumentsCount]; //Создаем массив для аргументов функции
+                    case UnaryOperation unaryOperation:
+                        if (stack.Count < 1)
+                        {
+                            throw new InvalidOperationException("Недостаточно операндов в стеке для унарной операции.");
+                        }
+                        var operand = stack.Pop();
+                        stack.Push(ApplyUnaryOperation(unaryOperation.Symbol, operand));
+                        break;
+
+                    case Function function:
+                        if (stack.Count < function.ArgumentsCount)
+                        {
+                            throw new InvalidOperationException($"Недостаточно аргументов для функции '{function.Name}'.");
+                        }
+                        var arguments = new double[function.ArgumentsCount];
                         for (int i = function.ArgumentsCount - 1; i >= 0; i--)
                         {
-                            args[i] = values.Pop(); //Извлекаем аргументы функции из стека
+                            arguments[i] = stack.Pop();
                         }
-                        values.Push(ApplyFunction(function, args)); //Применяем функцию и добавляем результат в стек
+                        stack.Push(ApplyFunction(function, arguments));
                         break;
 
-                    case Variable variable: //Если токен - переменная
-                        if (!variableValues.TryGetValue(variable.Name, out double varValue)) //Проверяем, есть ли значение переменной в словаре
-                            throw new ArgumentException($"Unknown variable: {variable.Name}"); //Вызываем исключение, если переменная не найдена
-                        values.Push(varValue); //Добавляем значение переменной в стек
-                        break;
+                    default:
+                        throw new InvalidOperationException($"Неизвестный токен '{token}'.");
                 }
             }
 
-            if (values.Count != 1) //Проверяем, что в стеке осталось только одно значение
-                throw new InvalidOperationException("Error in expression: More than one value left in the stack.");
+            if (stack.Count != 1)
+            {
+                throw new InvalidOperationException("Неверное количество значений в стеке после вычисления.");
+            }
 
-            return values.Pop();
+            return stack.Pop();
         }
         
         private static double ApplyFunction(Function function, double[] args)
