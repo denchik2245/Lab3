@@ -12,7 +12,7 @@ namespace RPN_Logic
             Value = value;
         }
 
-        public override string ToString() => Value.ToString();
+        public override string ToString() => Value.ToString(CultureInfo.InvariantCulture);
     }
 
     public class UnaryOperation : Token
@@ -100,6 +100,11 @@ namespace RPN_Logic
 
         public override string ToString() => Symbol.ToString();
     }
+    
+    public class Comma : Token
+    {
+        public override string ToString() => ",";
+    }
 
 
     public static class Calculator
@@ -138,13 +143,17 @@ namespace RPN_Logic
                             ProcessVariable(currentVar.ToString(), tokens);
                             currentVar.Clear();
                         }
-                        if (!char.IsWhiteSpace(ch) && ch != '(' && ch != ')')
+                        if (!char.IsWhiteSpace(ch) && ch != '(' && ch != ')' && ch != ',')
                         {
                             tokens.Add(new Operation(ch));
                         }
                         else if (ch == '(' || ch == ')')
                         {
                             tokens.Add(new Parenthesis(ch));
+                        }
+                        else if (ch == ',')
+                        {
+                            tokens.Add(new Comma());
                         }
                     }
                 }
@@ -212,6 +221,14 @@ namespace RPN_Logic
                         operationStack.Push(function);
                         break;
 
+                    case Comma:
+                        // Поп до ближайшей открывающей скобки
+                        while (operationStack.Count > 0 && !(operationStack.Peek() is Parenthesis p && p.Symbol == '('))
+                        {
+                            postfix.Add(operationStack.Pop());
+                        }
+                        break;
+
                     case UnaryOperation unaryOperation:
                         while (operationStack.Count != 0 &&
                                operationStack.Peek() is Operation topOperation &&
@@ -246,7 +263,6 @@ namespace RPN_Logic
                         {
                             operationStack.Pop();
                         }
-                        
                         if (operationStack.Count > 0 && operationStack.Peek() is Function)
                         {
                             postfix.Add(operationStack.Pop());
@@ -267,6 +283,7 @@ namespace RPN_Logic
 
             return postfix;
         }
+
 
         //Считаем выражение
         public static double EvaluatePostfix(List<Token> postfix, Dictionary<string, double> variableValues)
@@ -339,39 +356,17 @@ namespace RPN_Logic
         
         private static double ApplyFunction(Function function, double[] args)
         {
-            switch (function.Name)
+            return function.Name switch
             {
-                case "log":
-                    if (args.Length != 2)
-                        throw new ArgumentException("Function 'log' expects two arguments.");
-                    return Math.Log(args[0], args[1]);
-                case "rt":
-                    if (args.Length != 2)
-                        throw new ArgumentException("Function 'rt' expects two arguments.");
-                    return Math.Pow(args[1], 1 / args[0]);
-                case "sqrt":
-                    if (args.Length != 1)
-                        throw new ArgumentException("Function 'sqrt' expects one argument.");
-                    if (args[0] < 0)
-                        throw new ArgumentException("Cannot calculate square root of a negative number.");
-                    return Math.Sqrt(args[0]);
-                case "sin":
-                case "cos":
-                case "tg":
-                case "ctg":
-                    if (args.Length != 1)
-                        throw new ArgumentException($"Function '{function.Name}' expects one argument.");
-                    return function.Name switch
-                    {
-                        "sin" => Math.Sin(args[0]),
-                        "cos" => Math.Cos(args[0]),
-                        "tg" => Math.Tan(args[0]),
-                        "ctg" => 1 / Math.Tan(args[0]),
-                        _ => throw new ArgumentException($"Unsupported function: {function.Name}")
-                    };
-                default:
-                    throw new ArgumentException($"Unsupported function: {function.Name}");
-            }
+                "log" => args.Length == 2 ? Math.Log(args[1], args[0]) : throw new ArgumentException("Function 'log' expects two arguments."),
+                "rt" => args.Length == 2 ? Math.Pow(args[1], 1 / args[0]) : throw new ArgumentException("Function 'rt' expects two arguments."),
+                "sqrt" => args.Length == 1 ? Math.Sqrt(args[0]) : throw new ArgumentException("Function 'sqrt' expects one argument."),
+                "sin" => args.Length == 1 ? Math.Sin(args[0]) : throw new ArgumentException("Function 'sin' expects one argument."),
+                "cos" => args.Length == 1 ? Math.Cos(args[0]) : throw new ArgumentException("Function 'cos' expects one argument."),
+                "tg" => args.Length == 1 ? Math.Tan(args[0]) : throw new ArgumentException("Function 'tg' expects one argument."),
+                "ctg" => args.Length == 1 ? 1 / Math.Tan(args[0]) : throw new ArgumentException("Function 'ctg' expects one argument."),
+                _ => throw new ArgumentException($"Unsupported function: {function.Name}")
+            };
         }
 
         private static double ApplyUnaryOperation(char op, double a)
