@@ -58,7 +58,7 @@ namespace WithWPF
         StrokeThickness = 2
     };
 
-    double subStep = step / 10; // Используем более мелкий шаг для плавного графика
+    double subStep = step / 10;
 
     for (double x = startRange; x <= endRange; x += subStep)
     {

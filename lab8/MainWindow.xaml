@@ -17,7 +17,6 @@
             <TextBlock Text="Введите выражение:" VerticalAlignment="Center" Margin="0,0,5,0" />
             <TextBox x:Name="InputTextBox" Height="25" Width="200" GotFocus="InputTextBox_GotFocus" LostFocus="InputTextBox_LostFocus" />
         </StackPanel>
-        
 
         <!-- Поля ввода начала, конца, шага и масштаба -->
         <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Left" Margin="0,0,10,0">

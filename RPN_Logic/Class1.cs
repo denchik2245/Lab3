@@ -222,7 +222,6 @@ namespace RPN_Logic
                         break;
 
                     case Comma:
-                        // Поп до ближайшей открывающей скобки
                         while (operationStack.Count > 0 && !(operationStack.Peek() is Parenthesis p && p.Symbol == '('))
                         {
                             postfix.Add(operationStack.Pop());
