@@ -7,11 +7,7 @@ namespace RPN_Logic
     public class Number : Token
     {
         public double Value { get; }
-        public Number(double value)
-        {
-            Value = value;
-        }
-
+        public Number(double value) => Value = value;
         public override string ToString() => Value.ToString(CultureInfo.InvariantCulture);
     }
 
@@ -19,44 +15,24 @@ namespace RPN_Logic
     {
         public char Symbol { get; }
         public int Priority { get; }
-
-        public UnaryOperation(char symbol, int priority)
-        {
-            Symbol = symbol;
-            Priority = priority;
-        }
-
+        public UnaryOperation(char symbol, int priority) => (Symbol, Priority) = (symbol, priority);
         public override string ToString() => Symbol.ToString();
     }
-
 
     public class Function : Token
     {
         public string Name { get; }
         public int ArgumentsCount { get; }
-
-        public Function(string name, int argumentsCount)
-        {
-            Name = name;
-            ArgumentsCount = argumentsCount;
-        }
-
+        public Function(string name, int argumentsCount) => (Name, ArgumentsCount) = (name, argumentsCount);
         public override string ToString() => Name;
     }
-
     
     public class Variable : Token
     {
         public string Name { get; }
-
-        public Variable(string name)
-        {
-            Name = name;
-        }
-
+        public Variable(string name) => Name = name;
         public override string ToString() => Name;
     }
-
 
     public class Operation : Token
     {
@@ -74,12 +50,7 @@ namespace RPN_Logic
             '*' or '/' or '+' or '-' => Associativity.Left,
             _ => Associativity.Left
         };
-
-        public Operation(char symbol)
-        {
-            Symbol = symbol;
-        }
-
+        public Operation(char symbol) => Symbol = symbol;
         public override string ToString() => Symbol.ToString();
     }
 
@@ -92,12 +63,7 @@ namespace RPN_Logic
     public class Parenthesis : Token
     {
         public char Symbol { get; }
-
-        public Parenthesis(char symbol)
-        {
-            Symbol = symbol;
-        }
-
+        public Parenthesis(char symbol) => Symbol = symbol;
         public override string ToString() => Symbol.ToString();
     }
     
@@ -105,7 +71,6 @@ namespace RPN_Logic
     {
         public override string ToString() => ",";
     }
-
 
     public static class Calculator
     {
@@ -115,8 +80,7 @@ namespace RPN_Logic
             var tokens = new List<Token>();
             var currentNum = new StringBuilder();
             var currentVar = new StringBuilder();
-
-            //Проходим по каждому символу во входной строке
+            
             for (int i = 0; i < input.Length; i++)
             {
                 char ch = input[i];
@@ -166,7 +130,6 @@ namespace RPN_Logic
             {
                 ProcessVariable(currentVar.ToString(), tokens);
             }
-
             return tokens;
         }
 
@@ -210,80 +173,68 @@ namespace RPN_Logic
                 switch (token)
                 {
                     case Number number:
-                        postfix.Add(number);
-                        break;
-
                     case Variable variable:
-                        postfix.Add(variable);
+                        postfix.Add(token);
                         break;
 
                     case Function function:
-                        operationStack.Push(function);
+                    case Parenthesis parenthesis when parenthesis.Symbol == '(':
+                        operationStack.Push(token);
                         break;
 
                     case Comma:
-                        while (operationStack.Count > 0 && !(operationStack.Peek() is Parenthesis p && p.Symbol == '('))
-                        {
-                            postfix.Add(operationStack.Pop());
-                        }
+                        MoveOperatorsUntilParenthesis(operationStack, postfix);
                         break;
 
                     case UnaryOperation unaryOperation:
-                        while (operationStack.Count != 0 &&
-                               operationStack.Peek() is Operation topOperation &&
-                               topOperation.Priority >= unaryOperation.Priority)
-                        {
-                            postfix.Add(operationStack.Pop());
-                        }
-                        operationStack.Push(unaryOperation);
-                        break;
-
                     case Operation operation:
-                        while (operationStack.Count != 0 &&
-                               operationStack.Peek() is Operation topOperation &&
-                               ((operation.Associativity == Associativity.Left && topOperation.Priority >= operation.Priority) ||
-                                (operation.Associativity == Associativity.Right && topOperation.Priority > operation.Priority)))
-                        {
-                            postfix.Add(operationStack.Pop());
-                        }
-                        operationStack.Push(operation);
-                        break;
-
-                    case Parenthesis parenthesis when parenthesis.Symbol == '(':
-                        operationStack.Push(parenthesis);
+                        MoveOperatorsUntilLowerPriority(operationStack, postfix, token);
+                        operationStack.Push(token);
                         break;
 
                     case Parenthesis parenthesis when parenthesis.Symbol == ')':
-                        while (operationStack.Count > 0 && !(operationStack.Peek() is Parenthesis p && p.Symbol == '('))
-                        {
-                            postfix.Add(operationStack.Pop());
-                        }
-                        if (operationStack.Count > 0 && operationStack.Peek() is Parenthesis)
-                        {
-                            operationStack.Pop();
-                        }
-                        if (operationStack.Count > 0 && operationStack.Peek() is Function)
-                        {
-                            postfix.Add(operationStack.Pop());
-                        }
+                        MoveOperatorsUntilParenthesis(operationStack, postfix);
+                        PopFunctionIfPresent(operationStack, postfix);
                         break;
                 }
             }
 
-            // Переместить оставшиеся операции из стека в постфиксную запись
-            while (operationStack.Count != 0)
-            {
-                var remainingToken = operationStack.Pop();
-                if (!(remainingToken is Parenthesis))
-                {
-                    postfix.Add(remainingToken);
-                }
-            }
-
+            postfix.AddRange(operationStack.Where(t => !(t is Parenthesis)));
             return postfix;
         }
 
+        private static void MoveOperatorsUntilParenthesis(Stack<Token> operationStack, List<Token> postfix)
+        {
+            while (operationStack.Count > 0 && !(operationStack.Peek() is Parenthesis p && p.Symbol == '('))
+            {
+                postfix.Add(operationStack.Pop());
+            }
+        }
 
+        private static void MoveOperatorsUntilLowerPriority(Stack<Token> operationStack, List<Token> postfix, Token token)
+        {
+            while (operationStack.Count != 0 &&
+                   operationStack.Peek() is Operation topOperation &&
+                   ((token is UnaryOperation && topOperation.Priority >= ((UnaryOperation)token).Priority) ||
+                    (token is Operation && ((Operation)token).Associativity == Associativity.Left && topOperation.Priority >= ((Operation)token).Priority) ||
+                    (token is Operation && ((Operation)token).Associativity == Associativity.Right && topOperation.Priority > ((Operation)token).Priority)))
+            {
+                postfix.Add(operationStack.Pop());
+            }
+        }
+
+        private static void PopFunctionIfPresent(Stack<Token> operationStack, List<Token> postfix)
+        {
+            if (operationStack.Count > 0 && operationStack.Peek() is Parenthesis)
+            {
+                operationStack.Pop();
+            }
+            if (operationStack.Count > 0 && operationStack.Peek() is Function)
+            {
+                postfix.Add(operationStack.Pop());
+            }
+        }
+        
         //Считаем выражение
         public static double EvaluatePostfix(List<Token> postfix, Dictionary<string, double> variableValues)
         {
@@ -317,7 +268,7 @@ namespace RPN_Logic
                         var a = stack.Pop();
                         stack.Push(ApplyOperation(operation.Symbol, a, b));
                         break;
-
+                    
                     case UnaryOperation unaryOperation:
                         if (stack.Count < 1)
                         {

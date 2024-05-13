@@ -1,5 +1,4 @@
-﻿using System;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -15,14 +14,31 @@ namespace WithWPF
         public MainWindow()
         {
             InitializeComponent();
+            GraphScrollViewer.PreviewMouseWheel += GraphScrollViewer_PreviewMouseWheel;
+            GraphCanvas.PreviewMouseWheel += GraphCanvas_PreviewMouseWheel;
             DrawAxes();
+            BuildGraph("");  // Отобразить только координатные оси по центру
+            this.Loaded += MainWindow_Loaded;
         }
 
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Установка начального положения скроллеров в центр
+            GraphScrollViewer.ScrollToHorizontalOffset((GraphCanvas.Width - GraphScrollViewer.ViewportWidth) / 2);
+            GraphScrollViewer.ScrollToVerticalOffset((GraphCanvas.Height - GraphScrollViewer.ViewportHeight) / 2);
+        }
+        
         private void BuildGraph(string expression)
         {
             GraphCanvas.Children.Clear();
             DrawAxes();
-            double minX = -100, maxX = 100;
+
+            if (string.IsNullOrWhiteSpace(expression))
+            {
+                return;
+            }
+
+            double minX = -20, maxX = 20;
             double step = 1 / (_scaleFactor * ScaleSlider.Value / 100);
             double scale = _scaleFactor * ScaleSlider.Value / 100;
             DrawGraph(expression, minX, maxX, step, scale);
@@ -30,31 +46,34 @@ namespace WithWPF
 
         private void DrawAxes()
         {
+            GraphCanvas.Children.Clear();  // Очистка предыдущих графических элементов
+
             double scale = _scaleFactor * ScaleSlider.Value / 100;
+            double centerX = GraphCanvas.Width / 2;
+            double centerY = GraphCanvas.Height / 2;
 
             // Горизонтальная ось (ось X)
             Line xAxis = new Line
             {
                 X1 = 0,
-                X2 = GraphCanvas.Width - 10,
-                Y1 = GraphCanvas.Height / 2,
-                Y2 = GraphCanvas.Height / 2,
+                X2 = GraphCanvas.Width,
+                Y1 = centerY,
+                Y2 = centerY,
                 Stroke = Brushes.Black,
                 StrokeThickness = 2
             };
+            GraphCanvas.Children.Add(xAxis);
 
             // Вертикальная ось (ось Y)
             Line yAxis = new Line
             {
-                X1 = GraphCanvas.Width / 2,
-                X2 = GraphCanvas.Width / 2,
+                X1 = centerX,
+                X2 = centerX,
                 Y1 = 0,
-                Y2 = GraphCanvas.Height - 10,
+                Y2 = GraphCanvas.Height,
                 Stroke = Brushes.Black,
                 StrokeThickness = 2
             };
-
-            GraphCanvas.Children.Add(xAxis);
             GraphCanvas.Children.Add(yAxis);
 
             // Стрелка на оси X
@@ -62,9 +81,9 @@ namespace WithWPF
             {
                 Points = new PointCollection
                 {
-                    new Point(GraphCanvas.Width - 10, GraphCanvas.Height / 2 - 5),
-                    new Point(GraphCanvas.Width - 10, GraphCanvas.Height / 2 + 5),
-                    new Point(GraphCanvas.Width, GraphCanvas.Height / 2)
+                    new Point(GraphCanvas.Width - 10, centerY - 5),
+                    new Point(GraphCanvas.Width - 10, centerY + 5),
+                    new Point(GraphCanvas.Width, centerY)
                 },
                 Fill = Brushes.Black
             };
@@ -75,18 +94,21 @@ namespace WithWPF
             {
                 Points = new PointCollection
                 {
-                    new Point(GraphCanvas.Width / 2 - 5, 10),
-                    new Point(GraphCanvas.Width / 2 + 5, 10),
-                    new Point(GraphCanvas.Width / 2, 0)
+                    new Point(centerX - 5, 10),
+                    new Point(centerX + 5, 10),
+                    new Point(centerX, 0)
                 },
                 Fill = Brushes.Black
             };
             GraphCanvas.Children.Add(yArrow);
 
             // Штрихи и подписи на оси X
-            for (double x = -100; x <= 100; x += 1)
+            int tickStep = Math.Max(1, (int)Math.Ceiling(100 / scale));  // Шаг деления основан на масштабе, но не меньше 1
+            int startX = (int)(-GraphCanvas.Width / 2 / scale);
+            int endX = (int)(GraphCanvas.Width / 2 / scale);
+            for (int x = startX; x <= endX; x += tickStep)
             {
-                double canvasX = x * scale + GraphCanvas.Width / 2;
+                double canvasX = x * scale + centerX;
 
                 if (canvasX >= 0 && canvasX <= GraphCanvas.Width)
                 {
@@ -94,38 +116,41 @@ namespace WithWPF
                     {
                         X1 = canvasX,
                         X2 = canvasX,
-                        Y1 = GraphCanvas.Height / 2 - 5,
-                        Y2 = GraphCanvas.Height / 2 + 5,
+                        Y1 = centerY - 5,
+                        Y2 = centerY + 5,
                         Stroke = Brushes.Black,
                         StrokeThickness = 1
                     };
                     GraphCanvas.Children.Add(tick);
 
-                    if (x != 0)
+                    if (x != 0)  // Избегаем накладывания меток на начало координат
                     {
                         TextBlock label = new TextBlock
                         {
                             Text = x.ToString(),
-                            Foreground = Brushes.Black
+                            Foreground = Brushes.Black,
+                            FontSize = 10
                         };
                         Canvas.SetLeft(label, canvasX - label.ActualWidth / 2);
-                        Canvas.SetTop(label, GraphCanvas.Height / 2 + 5);
+                        Canvas.SetTop(label, centerY + 10);
                         GraphCanvas.Children.Add(label);
                     }
                 }
             }
 
             // Штрихи и подписи на оси Y
-            for (double y = -100; y <= 100; y += 1)
+            int startY = (int)(-GraphCanvas.Height / 2 / scale);
+            int endY = (int)(GraphCanvas.Height / 2 / scale);
+            for (int y = startY; y <= endY; y += tickStep)
             {
-                double canvasY = GraphCanvas.Height / 2 - y * scale;
+                double canvasY = centerY - y * scale;
 
                 if (canvasY >= 0 && canvasY <= GraphCanvas.Height)
                 {
                     Line tick = new Line
                     {
-                        X1 = GraphCanvas.Width / 2 - 5,
-                        X2 = GraphCanvas.Width / 2 + 5,
+                        X1 = centerX - 5,
+                        X2 = centerX + 5,
                         Y1 = canvasY,
                         Y2 = canvasY,
                         Stroke = Brushes.Black,
@@ -133,26 +158,27 @@ namespace WithWPF
                     };
                     GraphCanvas.Children.Add(tick);
 
-                    if (y != 0)
+                    if (y != 0)  // Избегаем накладывания меток на начало координат
                     {
                         TextBlock label = new TextBlock
                         {
                             Text = y.ToString(),
-                            Foreground = Brushes.Black
+                            Foreground = Brushes.Black,
+                            FontSize = 10
                         };
-                        Canvas.SetLeft(label, GraphCanvas.Width / 2 + 5);
+                        Canvas.SetLeft(label, centerX + 10);
                         Canvas.SetTop(label, canvasY - label.ActualHeight / 2);
                         GraphCanvas.Children.Add(label);
                     }
                 }
             }
         }
-
+        
         private void DrawGraph(string expression, double minX, double maxX, double step, double scale)
         {
             Polyline graphLine = new Polyline
             {
-                Stroke = Brushes.Red,
+                Stroke = Brushes.OrangeRed,
                 StrokeThickness = 2
             };
 
@@ -181,17 +207,14 @@ namespace WithWPF
 
             GraphCanvas.Children.Add(graphLine);
         }
-
-        private void GraphCanvas_MouseWheel(object sender, MouseWheelEventArgs e)
+        
+        private void GraphCanvas_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
         {
             double deltaScale = e.Delta > 0 ? 1.1 : 0.9;
-            ScaleSlider.Value *= deltaScale;
+            ScaleSlider.Value = Math.Max(ScaleSlider.Minimum, Math.Min(ScaleSlider.Maximum, ScaleSlider.Value * deltaScale));
+            e.Handled = true;  // Останавливает дальнейшую обработку события
         }
 
-        private void GraphCanvas_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            BuildGraph("sin(x)");
-        }
 
         private void BuildGraphButtonClick(object sender, RoutedEventArgs e)
         {
@@ -204,6 +227,11 @@ namespace WithWPF
             BuildGraph(InputTextBox.Text);
         }
 
+        private void GraphScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            e.Handled = true;
+        }
+        
         private void ScaleSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (!string.IsNullOrWhiteSpace(InputTextBox.Text))
