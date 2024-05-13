@@ -17,13 +17,12 @@ namespace WithWPF
             GraphScrollViewer.PreviewMouseWheel += GraphScrollViewer_PreviewMouseWheel;
             GraphCanvas.PreviewMouseWheel += GraphCanvas_PreviewMouseWheel;
             DrawAxes();
-            BuildGraph("");  // Отобразить только координатные оси по центру
+            BuildGraph("");
             this.Loaded += MainWindow_Loaded;
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            // Установка начального положения скроллеров в центр
             GraphScrollViewer.ScrollToHorizontalOffset((GraphCanvas.Width - GraphScrollViewer.ViewportWidth) / 2);
             GraphScrollViewer.ScrollToVerticalOffset((GraphCanvas.Height - GraphScrollViewer.ViewportHeight) / 2);
         }
@@ -46,7 +45,7 @@ namespace WithWPF
 
         private void DrawAxes()
         {
-            GraphCanvas.Children.Clear();  // Очистка предыдущих графических элементов
+            GraphCanvas.Children.Clear();
 
             double scale = _scaleFactor * ScaleSlider.Value / 100;
             double centerX = GraphCanvas.Width / 2;
@@ -103,7 +102,7 @@ namespace WithWPF
             GraphCanvas.Children.Add(yArrow);
 
             // Штрихи и подписи на оси X
-            int tickStep = Math.Max(1, (int)Math.Ceiling(100 / scale));  // Шаг деления основан на масштабе, но не меньше 1
+            int tickStep = Math.Max(1, (int)Math.Ceiling(100 / scale));
             int startX = (int)(-GraphCanvas.Width / 2 / scale);
             int endX = (int)(GraphCanvas.Width / 2 / scale);
             for (int x = startX; x <= endX; x += tickStep)
@@ -123,7 +122,7 @@ namespace WithWPF
                     };
                     GraphCanvas.Children.Add(tick);
 
-                    if (x != 0)  // Избегаем накладывания меток на начало координат
+                    if (x != 0)
                     {
                         TextBlock label = new TextBlock
                         {
@@ -158,7 +157,7 @@ namespace WithWPF
                     };
                     GraphCanvas.Children.Add(tick);
 
-                    if (y != 0)  // Избегаем накладывания меток на начало координат
+                    if (y != 0)
                     {
                         TextBlock label = new TextBlock
                         {
@@ -212,7 +211,7 @@ namespace WithWPF
         {
             double deltaScale = e.Delta > 0 ? 1.1 : 0.9;
             ScaleSlider.Value = Math.Max(ScaleSlider.Minimum, Math.Min(ScaleSlider.Maximum, ScaleSlider.Value * deltaScale));
-            e.Handled = true;  // Останавливает дальнейшую обработку события
+            e.Handled = true;
         }
 
 
