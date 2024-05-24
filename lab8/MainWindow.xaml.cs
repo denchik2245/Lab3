@@ -79,9 +79,7 @@ namespace WithWPF
 
     GraphCanvas.Children.Add(graphLine);
 }
-
-
-
+        
         private void DrawGrid(double centerX, double centerY, double step, double scale)
         {
             GraphCanvas.Children.Clear();

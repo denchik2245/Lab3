@@ -78,57 +78,47 @@ namespace RPN_Logic
         public static List<Token> Tokenize(string input)
         {
             var tokens = new List<Token>();
-            var currentNum = new StringBuilder();
-            var currentVar = new StringBuilder();
-            
+
             for (int i = 0; i < input.Length; i++)
             {
                 char ch = input[i];
-                
                 if (char.IsDigit(ch) || ch == '.')
                 {
-                    currentNum.Append(ch);
-                }
-                else
-                {
-                    if (currentNum.Length > 0)
+                    var currentNum = new StringBuilder();
+                    while (i < input.Length && (char.IsDigit(input[i]) || input[i] == '.'))
                     {
-                        tokens.Add(new Number(double.Parse(currentNum.ToString(), CultureInfo.InvariantCulture)));
-                        currentNum.Clear();
+                        currentNum.Append(input[i]);
+                        i++;
                     }
-                    if (char.IsLetter(ch))
+                    tokens.Add(new Number(double.Parse(currentNum.ToString(), CultureInfo.InvariantCulture)));
+                    i--;
+                }
+                else if (char.IsLetter(ch))
+                {
+                    var currentVar = new StringBuilder();
+                    while (i < input.Length && char.IsLetter(input[i]))
                     {
-                        currentVar.Append(ch);
+                        currentVar.Append(input[i]);
+                        i++;
+                    }
+                    ProcessVariable(currentVar.ToString(), tokens);
+                    i--;
+                }
+                else if (!char.IsWhiteSpace(ch))
+                {
+                    if (ch == '(' || ch == ')')
+                    {
+                        tokens.Add(new Parenthesis(ch));
+                    }
+                    else if (ch == ',')
+                    {
+                        tokens.Add(new Comma());
                     }
                     else
                     {
-                        if (currentVar.Length > 0)
-                        {
-                            ProcessVariable(currentVar.ToString(), tokens);
-                            currentVar.Clear();
-                        }
-                        if (!char.IsWhiteSpace(ch) && ch != '(' && ch != ')' && ch != ',')
-                        {
-                            tokens.Add(new Operation(ch));
-                        }
-                        else if (ch == '(' || ch == ')')
-                        {
-                            tokens.Add(new Parenthesis(ch));
-                        }
-                        else if (ch == ',')
-                        {
-                            tokens.Add(new Comma());
-                        }
+                        tokens.Add(new Operation(ch));
                     }
                 }
-            }
-            if (currentNum.Length > 0)
-            {
-                tokens.Add(new Number(double.Parse(currentNum.ToString(), CultureInfo.InvariantCulture)));
-            }
-            if (currentVar.Length > 0)
-            {
-                ProcessVariable(currentVar.ToString(), tokens);
             }
             return tokens;
         }
@@ -147,6 +137,7 @@ namespace RPN_Logic
             }
         }
         
+        //Метод для определения количества переменных у функции
         private static int FunctionArgumentsCount(string functionName)
         {
             return functionName switch
@@ -158,7 +149,7 @@ namespace RPN_Logic
                 "cos" => 1,
                 "tg" => 1,
                 "ctg" => 1,
-                _ => throw new ArgumentException($"Unsupported function: {functionName}")
+                _ => throw new ArgumentException($"Неподдерживаемая функция: {functionName}")
             };
         }
 
@@ -172,12 +163,12 @@ namespace RPN_Logic
             {
                 switch (token)
                 {
-                    case Number number:
-                    case Variable variable:
+                    case Number:
+                    case Variable:
                         postfix.Add(token);
                         break;
 
-                    case Function function:
+                    case Function:
                     case Parenthesis parenthesis when parenthesis.Symbol == '(':
                         operationStack.Push(token);
                         break;
@@ -186,8 +177,8 @@ namespace RPN_Logic
                         MoveOperatorsUntilParenthesis(operationStack, postfix);
                         break;
 
-                    case UnaryOperation unaryOperation:
-                    case Operation operation:
+                    case UnaryOperation:
+                    case Operation:
                         MoveOperatorsUntilLowerPriority(operationStack, postfix, token);
                         operationStack.Push(token);
                         break;
@@ -308,14 +299,14 @@ namespace RPN_Logic
         {
             return function.Name switch
             {
-                "log" => args.Length == 2 ? Math.Log(args[1], args[0]) : throw new ArgumentException("Function 'log' expects two arguments."),
-                "rt" => args.Length == 2 ? Math.Pow(args[1], 1 / args[0]) : throw new ArgumentException("Function 'rt' expects two arguments."),
-                "sqrt" => args.Length == 1 ? Math.Sqrt(args[0]) : throw new ArgumentException("Function 'sqrt' expects one argument."),
-                "sin" => args.Length == 1 ? Math.Sin(args[0]) : throw new ArgumentException("Function 'sin' expects one argument."),
-                "cos" => args.Length == 1 ? Math.Cos(args[0]) : throw new ArgumentException("Function 'cos' expects one argument."),
-                "tg" => args.Length == 1 ? Math.Tan(args[0]) : throw new ArgumentException("Function 'tg' expects one argument."),
-                "ctg" => args.Length == 1 ? 1 / Math.Tan(args[0]) : throw new ArgumentException("Function 'ctg' expects one argument."),
-                _ => throw new ArgumentException($"Unsupported function: {function.Name}")
+                "log" => args.Length == 2 ? Math.Log(args[1], args[0]) : throw new ArgumentException("Функция 'log' должна иметь 2 аргумента."),
+                "rt" => args.Length == 2 ? Math.Pow(args[1], 1 / args[0]) : throw new ArgumentException("Функция 'rt' должна иметь 2 аргумента."),
+                "sqrt" => args.Length == 1 ? Math.Sqrt(args[0]) : throw new ArgumentException("Функция 'sqrt' должна иметь 1 аргумент."),
+                "sin" => args.Length == 1 ? Math.Sin(args[0]) : throw new ArgumentException("Функция 'sin' должна иметь 1 аргумент."),
+                "cos" => args.Length == 1 ? Math.Cos(args[0]) : throw new ArgumentException("Функция 'cos' должна иметь 1 аргумент."),
+                "tg" => args.Length == 1 ? Math.Tan(args[0]) : throw new ArgumentException("Функция 'tg' должна иметь 1 аргумент."),
+                "ctg" => args.Length == 1 ? 1 / Math.Tan(args[0]) : throw new ArgumentException("Функция 'ctg' должна иметь 1 аргумент."),
+                _ => throw new ArgumentException($"Неподдерживаемая функция: {function.Name}")
             };
         }
 
@@ -335,9 +326,9 @@ namespace RPN_Logic
                 '+' => a + b,
                 '-' => a - b,
                 '*' => a * b,
-                '/' => b == 0 ? throw new DivideByZeroException("Attempt to divide by zero.") : a / b,
+                '/' => b == 0 ? throw new DivideByZeroException("Деление на ноль.") : a / b,
                 '^' => Math.Pow(a, b),
-                _ => throw new ArgumentException($"Unsupported operation: {op}")
+                _ => throw new ArgumentException($"Неподдерживаемая операция: {op}")
             };
         }
     }
