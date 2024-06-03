@@ -10,6 +10,7 @@ namespace WithWPF
             InitializeComponent();
         }
 
+        //Обработчик событий кнопки "Вычислить"
         private void CalculateButtonClick(object sender, RoutedEventArgs e)
         {
             try
@@ -45,3 +46,5 @@ namespace WithWPF
         }
     }
 }   
+
+

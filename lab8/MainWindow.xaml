@@ -36,7 +36,7 @@
                 <TextBlock Text="Масштаб" Margin="0,0,0,5" />
                 <TextBox x:Name="ScaleTextBox" Height="25" Width="100" GotFocus="ScaleTextBox_GotFocus" LostFocus="ScaleTextBox_LostFocus" />
             </StackPanel>
-            <Button Content="Обновить" Height="25" Width="100" Click="BuildGraphButtonClick" />
+            <Button Content="Построить" Height="25" Width="100" Click="BuildGraphButtonClick" />
         </StackPanel>
 
         <!-- Обрамление графика с ползунком -->

@@ -26,3 +26,5 @@
         <Label x:Name="ResultLabel" Grid.Row="5" Height="25" VerticalAlignment="Top" />
     </Grid>
 </Window>
+
+

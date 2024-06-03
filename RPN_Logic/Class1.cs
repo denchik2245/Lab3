@@ -4,6 +4,7 @@ using System.Text;
 namespace RPN_Logic
 {
     public abstract class Token { }
+
     public class Number : Token
     {
         public double Value { get; }
@@ -26,7 +27,7 @@ namespace RPN_Logic
         public Function(string name, int argumentsCount) => (Name, ArgumentsCount) = (name, argumentsCount);
         public override string ToString() => Name;
     }
-    
+
     public class Variable : Token
     {
         public string Name { get; }
@@ -59,14 +60,14 @@ namespace RPN_Logic
         Left,
         Right
     }
-    
+
     public class Parenthesis : Token
     {
         public char Symbol { get; }
         public Parenthesis(char symbol) => Symbol = symbol;
         public override string ToString() => Symbol.ToString();
     }
-    
+
     public class Comma : Token
     {
         public override string ToString() => ",";
@@ -74,7 +75,7 @@ namespace RPN_Logic
 
     public static class Calculator
     {
-        //Разбиваем на список токенов
+        //Метод для разбиения выражения на токены
         public static List<Token> Tokenize(string input)
         {
             var tokens = new List<Token>();
@@ -123,7 +124,7 @@ namespace RPN_Logic
             return tokens;
         }
 
-        //Метод для обработки переменной как функции или переменной
+        //Метод для определения это Функция или переменная
         private static void ProcessVariable(string var, List<Token> tokens)
         {
             try
@@ -136,8 +137,8 @@ namespace RPN_Logic
                 tokens.Add(new Variable(var));
             }
         }
-        
-        //Метод для определения количества переменных у функции
+
+        //Метод для вывода количества операторов в зависимости от функции
         private static int FunctionArgumentsCount(string functionName)
         {
             return functionName switch
@@ -153,11 +154,12 @@ namespace RPN_Logic
             };
         }
 
-        //Метод для преобразования инфиксного выражения в постфиксное
+        //Метод для составления ОПЗ из токенов
         public static List<Token> ConvertToPostfix(List<Token> tokens)
         {
             var postfix = new List<Token>();
             var operationStack = new Stack<Token>();
+            bool expectOperand = true;
 
             foreach (var token in tokens)
             {
@@ -166,21 +168,28 @@ namespace RPN_Logic
                     case Number:
                     case Variable:
                         postfix.Add(token);
+                        expectOperand = false;
                         break;
 
                     case Function:
                     case Parenthesis parenthesis when parenthesis.Symbol == '(':
                         operationStack.Push(token);
+                        expectOperand = true;
                         break;
 
                     case Comma:
                         MoveOperatorsUntilParenthesis(operationStack, postfix);
                         break;
 
+                    case Operation operation when expectOperand && (operation.Symbol == '-' || operation.Symbol == '+'):
+                        operationStack.Push(new UnaryOperation(operation.Symbol, 4));
+                        break;
+
                     case UnaryOperation:
                     case Operation:
                         MoveOperatorsUntilLowerPriority(operationStack, postfix, token);
                         operationStack.Push(token);
+                        expectOperand = true;
                         break;
 
                     case Parenthesis parenthesis when parenthesis.Symbol == ')':
@@ -193,7 +202,8 @@ namespace RPN_Logic
             postfix.AddRange(operationStack.Where(t => !(t is Parenthesis)));
             return postfix;
         }
-
+        
+        //Метод для перемещения операторов в список ОПЗ пока не встретится открывающая скобка
         private static void MoveOperatorsUntilParenthesis(Stack<Token> operationStack, List<Token> postfix)
         {
             while (operationStack.Count > 0 && !(operationStack.Peek() is Parenthesis p && p.Symbol == '('))
@@ -202,6 +212,7 @@ namespace RPN_Logic
             }
         }
 
+        //Метод для перемещения операторов в список ОПЗ в зависимости от приоритета
         private static void MoveOperatorsUntilLowerPriority(Stack<Token> operationStack, List<Token> postfix, Token token)
         {
             while (operationStack.Count != 0 &&
@@ -214,6 +225,7 @@ namespace RPN_Logic
             }
         }
 
+        //Метод для скобок и функций
         private static void PopFunctionIfPresent(Stack<Token> operationStack, List<Token> postfix)
         {
             if (operationStack.Count > 0 && operationStack.Peek() is Parenthesis)
@@ -225,8 +237,8 @@ namespace RPN_Logic
                 postfix.Add(operationStack.Pop());
             }
         }
-        
-        //Считаем выражение
+
+        //Метод для подсчета всего выражения, записанного в ОПЗ
         public static double EvaluatePostfix(List<Token> postfix, Dictionary<string, double> variableValues)
         {
             var stack = new Stack<double>();
@@ -259,7 +271,7 @@ namespace RPN_Logic
                         var a = stack.Pop();
                         stack.Push(ApplyOperation(operation.Symbol, a, b));
                         break;
-                    
+
                     case UnaryOperation unaryOperation:
                         if (stack.Count < 1)
                         {
@@ -294,7 +306,8 @@ namespace RPN_Logic
 
             return stack.Pop();
         }
-        
+
+        //Метод для подсчета функций
         private static double ApplyFunction(Function function, double[] args)
         {
             return function.Name switch
@@ -310,15 +323,18 @@ namespace RPN_Logic
             };
         }
 
+        //Метод для выполнения унарных операций
         private static double ApplyUnaryOperation(char op, double a)
         {
             return op switch
             {
                 '-' => -a,
+                '+' => a,
                 _ => throw new ArgumentException($"Неподдерживаемая унарная операция: {op}")
             };
         }
-
+        
+        //Метод для операций между двумя числами на основе переданного оператора
         private static double ApplyOperation(char op, double a, double b)
         {
             return op switch

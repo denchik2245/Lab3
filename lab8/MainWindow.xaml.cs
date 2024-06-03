@@ -14,6 +14,7 @@ namespace WithWPF
             InitializeComponent();
         }
 
+        //Эти методы определяют обработчики событий для получения и потери фокуса текстовыми полями
         private void StartRangeTextBox_GotFocus(object sender, RoutedEventArgs e) { }
         private void StartRangeTextBox_LostFocus(object sender, RoutedEventArgs e) { }
         private void EndRangeTextBox_GotFocus(object sender, RoutedEventArgs e) { }
@@ -22,10 +23,10 @@ namespace WithWPF
         private void StepTextBox_LostFocus(object sender, RoutedEventArgs e) { }
         private void ScaleTextBox_GotFocus(object sender, RoutedEventArgs e) { }
         private void ScaleTextBox_LostFocus(object sender, RoutedEventArgs e) { }
-
         private void InputTextBox_GotFocus(object sender, RoutedEventArgs e) { }
         private void InputTextBox_LostFocus(object sender, RoutedEventArgs e) { }
 
+        //Обработчик событий кнопки "Построить"
         private void BuildGraphButtonClick(object sender, RoutedEventArgs e)
         {
             if (!double.TryParse(StartRangeTextBox.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out double startRange) ||
@@ -41,49 +42,51 @@ namespace WithWPF
             DrawGraph(InputTextBox.Text, startRange, endRange, step, scale);
         }
 
+        //Отрисовка графика
         private void DrawGraph(string input, double startRange, double endRange, double step, double scale)
-{
-    GraphCanvas.Children.Clear();
-    GraphBorder.Width = GraphCanvas.ActualWidth;
-    GraphBorder.Height = GraphCanvas.ActualHeight;
-
-    double centerCanvasX = GraphBorder.ActualWidth / 2;
-    double centerCanvasY = GraphBorder.ActualHeight / 2;
-
-    DrawGrid(centerCanvasX, centerCanvasY, step, scale);
-
-    Polyline graphLine = new Polyline
-    {
-        Stroke = Brushes.Red,
-        StrokeThickness = 2
-    };
-
-    double subStep = step / 10;
-
-    for (double x = startRange; x <= endRange; x += subStep)
-    {
-        try
         {
-            var tokens = Calculator.Tokenize(input);
-            var postfix = Calculator.ConvertToPostfix(tokens);
-            double result = Calculator.EvaluatePostfix(postfix, new Dictionary<string, double> { { "x", x } });
+            GraphCanvas.Children.Clear();
+            GraphBorder.Width = GraphCanvas.ActualWidth;
+            GraphBorder.Height = GraphCanvas.ActualHeight;
 
-            Point graphPoint = new Point(centerCanvasX + (x * scale), centerCanvasY - (result * scale));
-            graphLine.Points.Add(graphPoint);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Ошибка при вычислении графика: {ex.Message}");
-        }
-    }
+            double centerCanvasX = GraphBorder.ActualWidth / 2;
+            double centerCanvasY = GraphBorder.ActualHeight / 2;
 
-    GraphCanvas.Children.Add(graphLine);
-}
+            DrawGrid(centerCanvasX, centerCanvasY, step, scale);
+
+            Polyline graphLine = new Polyline
+            {
+                Stroke = Brushes.Red,
+                StrokeThickness = 2
+            };
+
+            double subStep = step / 10;
+
+            for (double x = startRange; x <= endRange; x += subStep)
+            {
+                try
+                {
+                    var tokens = Calculator.Tokenize(input);
+                    var postfix = Calculator.ConvertToPostfix(tokens);
+                    double result = Calculator.EvaluatePostfix(postfix, new Dictionary<string, double> { { "x", x } });
+                    Point graphPoint = new Point(centerCanvasX + (x * scale), centerCanvasY - (result * scale));
+                    graphLine.Points.Add(graphPoint);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка при вычислении графика: {ex.Message}");
+                }
+            }
+
+            GraphCanvas.Children.Add(graphLine);
+        }
         
+        //Отрисовка осей
         private void DrawGrid(double centerX, double centerY, double step, double scale)
         {
             GraphCanvas.Children.Clear();
 
+            //Создание и добавление оси X
             Line axisX = new Line
             {
                 X1 = 0,
@@ -93,6 +96,7 @@ namespace WithWPF
                 Stroke = Brushes.Black
             };
 
+            //Создание и добавление оси Y
             Line axisY = new Line
             {
                 X1 = centerX,
@@ -146,6 +150,7 @@ namespace WithWPF
             }
         }
 
+        //Отрисовка штрихов
         private Line CreateTick(double x, double y)
         {
             return new Line
